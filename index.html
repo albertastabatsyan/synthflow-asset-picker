@@ -77,7 +77,16 @@
   #sentinel { height:1px; }
   #bucketview { padding:16px; display:none; }
   #bucketview.show { display:block; }
+  #bucketview.dropping { outline:2px dashed var(--acc); outline-offset:-8px; }
   #bucketview .empty { color:var(--dim); padding:40px; text-align:center; }
+  .bbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  .bbar button { background:var(--panel); border:1px solid var(--line); color:var(--txt);
+                 padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px; }
+  .bbar button:hover { border-color:var(--acc); }
+  .bbar .note { color:var(--dim); font-size:12px; }
+  .upbadge { color:var(--acc); font-size:11px; white-space:nowrap; }
+  .cntbadge { background:var(--pick); color:#0b120d; font-size:11px; font-weight:700;
+              border-radius:9px; padding:1px 7px; flex:none; }
   .bhead { margin:20px 0 10px; font-size:13px; font-weight:600; color:var(--acc);
            border-bottom:1px solid var(--line); padding-bottom:6px; }
   .bhead:first-child { margin-top:0; }
@@ -155,12 +164,13 @@
   <span class="sub" id="sub">loading…</span>
   <div class="tabs">
     <button class="tab active" id="tabLib">Library</button>
-    <button class="tab" id="tabBucket">Bucket<span class="badge" id="bcount">0</span></button>
+    <button class="tab" id="tabBucket">Vibe Bucket<span class="badge" id="bcount">0</span></button>
   </div>
   <label class="sel">pick into
     <select id="pickcat"><option value="">no category</option></select>
   </label>
   <input type="search" id="q" placeholder="Search name or page…">
+  <label class="sel"><input type="checkbox" id="hidepicked">hide picked</label>
   <select id="pagefilter"><option value="">All pages</option></select>
   <button class="who" id="whochip">…</button>
 </header>
@@ -255,12 +265,13 @@ function mkFile(key, label, dir, data){
   return entry;
 }
 
-/* Shared card skeleton: thumb + name row + page/Figma row. */
+/* Shared card skeleton: thumb + name row + page/Figma row.
+   info.src = absolute image URL (uploads); info.noFig skips the Figma link. */
 function baseCard(nodeId, fs, info, onZoom){
   const card=el("card");
   const tw=el("thumbwrap");
-  if(info.img){ const im=document.createElement("img"); im.loading="lazy";
-    im.src=imgSrc(fs, info.img); tw.appendChild(hideOnErr(im)); }
+  if(info.src || info.img){ const im=document.createElement("img"); im.loading="lazy";
+    im.src=info.src || imgSrc(fs, info.img); tw.appendChild(hideOnErr(im)); }
   else tw.appendChild(el("noimg", info.noimg||"no render"));
   if(onZoom) tw.onclick=onZoom;
   card.appendChild(tw);
@@ -268,9 +279,11 @@ function baseCard(nodeId, fs, info, onZoom){
   meta.appendChild(el("cname", info.name));
   card.appendChild(meta);
   const pg=el("cpage");
-  const pgtext=(state.fileset.length>1 && fs!==F()) ? `${fs.label} · ${info.page}` : info.page;
+  const pgtext=(state.fileset.length>1 && fs && fs!==F()) ? `${fs.label} · ${info.page}` : info.page;
   pg.appendChild(Object.assign(el("pg", pgtext),{className:"pg"}));
-  pg.appendChild(figA(nodeId, fs.key));
+  if(info.noFig){ const b=document.createElement("span"); b.className="upbadge";
+    b.textContent="uploaded"; pg.appendChild(b); }
+  else pg.appendChild(figA(nodeId, fs.key));
   card.appendChild(pg);
   return {card, meta};
 }
@@ -397,7 +410,11 @@ async function refreshPicks(force){
     } else {
       p = await (await fetch(state.apiBase+"/picks")).json();
       for(const id of Object.keys(p)){          // enrich from data.json; the
-        const ql=qlookup(id);                   // Worker stores only cat+pickers
+        if(p[id].upload){                       // Worker stores only cat+pickers
+          p[id]={...p[id], img:null, name:p[id].upload.name, page:"Uploaded"};
+          continue;
+        }
+        const ql=qlookup(id);
         if(ql) p[id]={...p[id], img:ql.img, name:ql.name, page:ql.page};
         else delete p[id];
       }
@@ -452,9 +469,11 @@ function renderSidebar(){
 function applyFilter(){
   const q = $("#q").value.trim().toLowerCase();
   const pf = $("#pagefilter").value;
+  const hp = $("#hidepicked").checked;
   state.filtered = state.cards.map((c,i)=>i).filter(i=>{
     const c = state.cards[i];
     if(pf && c.page!==pf) return false;
+    if(hp && (state.picks[qid(c.id)] || c.members.some(m=>state.picks[qid(m.id)]))) return false;
     if(q && !(c.name.toLowerCase().includes(q) || c.page.toLowerCase().includes(q))) return false;
     return true;
   });
@@ -637,11 +656,20 @@ $("#lbprev").onclick=e=>{ e.stopPropagation(); navCard(-1); };
 $("#lbnext").onclick=e=>{ e.stopPropagation(); navCard(1); };
 
 function bucketItemCard(id, it){
-  const ql=qlookup(id);
-  const fs=ql?ql.fs:F(), nid=ql?ql.nid:id;
-  const {card, meta} = baseCard(nid, fs, {img:it.img, name:it.name, page:it.page},
-    ()=>openLightboxById(id));
+  let card, meta;
+  if(it.upload){
+    ({card, meta} = baseCard(id, null,
+      {src:state.apiBase+"/upload/"+id, name:it.name, page:it.page, noFig:true}, null));
+  } else {
+    const ql=qlookup(id);
+    const fs=ql?ql.fs:F(), nid=ql?ql.nid:id;
+    ({card, meta} = baseCard(nid, fs, {img:it.img, name:it.name, page:it.page},
+      ()=>openLightboxById(id)));
+  }
   card.classList.add("picked");
+  const n=Object.keys(it.pickers).length;
+  if(n>1){ const cb=document.createElement("span"); cb.className="cntbadge";
+    cb.textContent="×"+n; cb.title=n+" people picked this"; meta.appendChild(cb); }
   if(it.pickers[state.who]){
     const rm=document.createElement("button"); rm.className="rmbtn"; rm.textContent="remove";
     rm.onclick=()=>doPick(id,"remove"); meta.appendChild(rm);
@@ -655,15 +683,34 @@ function bucketItemCard(id, it){
   return card;
 }
 
+function canUpload(){ return !!state.apiBase; }   // uploads need the live Worker
 function renderBucket(){
   const v=$("#bucketview"); v.innerHTML="";
+  const bar=el("bbar");
+  if(canUpload()){
+    const up=document.createElement("button"); up.textContent="⬆ Upload images";
+    up.onclick=()=>$("#upfile").click(); bar.appendChild(up);
+    const fi=document.createElement("input"); fi.type="file"; fi.id="upfile";
+    fi.accept="image/png,image/jpeg,image/webp,image/gif"; fi.multiple=true;
+    fi.style.display="none"; fi.onchange=()=>{ uploadFiles(fi.files); fi.value=""; };
+    bar.appendChild(fi);
+  }
   const ids=Object.keys(state.picks);
-  if(!ids.length){ v.appendChild(el("empty","Bucket is empty — pick assets from the Library tab.")); return; }
+  if(ids.length){
+    const cp=document.createElement("button"); cp.textContent="Copy Figma links";
+    cp.onclick=copyFigmaLinks; bar.appendChild(cp);
+    const dl=document.createElement("button"); dl.textContent="⬇ Download moodboard";
+    dl.onclick=downloadMoodboard; bar.appendChild(dl);
+  }
+  if(canUpload()) bar.appendChild(el("note","drop images anywhere here to add them"));
+  v.appendChild(bar);
+  if(!ids.length){ v.appendChild(el("empty","Vibe bucket is empty — pick from the libraries or upload images.")); return; }
   const latest=id=>Object.values(state.picks[id].pickers).sort().pop()||"";
+  const votes=id=>Object.keys(state.picks[id].pickers).length;
   const groups=[...state.data.categories.map(c=>c[0]), ""];
   for(const g of groups){
     const gids=ids.filter(id=>(state.picks[id].cat||"")===g)
-                  .sort((a,b)=>latest(b).localeCompare(latest(a)));
+                  .sort((a,b)=> votes(b)-votes(a) || latest(b).localeCompare(latest(a)));
     if(!gids.length) continue;
     const h=el("bhead", g ? catLabel(g) : "Uncategorized"); h.id="bg-"+(g||"uncat");
     const n=document.createElement("span"); n.className="n"; n.textContent=` · ${gids.length}`;
@@ -673,6 +720,94 @@ function renderBucket(){
     for(const id of gids) grid.appendChild(bucketItemCard(id, state.picks[id]));
     v.appendChild(grid);
   }
+}
+
+async function uploadFiles(files){
+  if(!canUpload()) return;
+  if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); return; }
+  for(const f of files){
+    if(!/^image\/(png|jpeg|webp|gif)$/.test(f.type)){ toast(`${f.name}: not an image`); continue; }
+    if(f.size > 10*1024*1024){ toast(`${f.name}: over 10 MB`); continue; }
+    const data=await new Promise(res=>{ const r=new FileReader();
+      r.onload=()=>res(r.result); r.readAsDataURL(f); });
+    const resp=await fetch(state.apiBase+"/upload",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({who:state.who, name:f.name.replace(/\.[^.]+$/,""),
+                           type:f.type, cat:activeCat(), data})});
+    toast(resp.ok ? `Uploaded ${f.name}` : `Upload failed: ${f.name}`);
+  }
+  await refreshPicks(true);
+}
+const bv=$("#bucketview");
+bv.addEventListener("dragover",e=>{ if(canUpload()&&state.tab==="bucket"){ e.preventDefault(); bv.classList.add("dropping"); } });
+bv.addEventListener("dragleave",()=>bv.classList.remove("dropping"));
+bv.addEventListener("drop",e=>{ if(!canUpload()||state.tab!=="bucket") return;
+  e.preventDefault(); bv.classList.remove("dropping");
+  if(e.dataTransfer && e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); });
+
+function copyFigmaLinks(){
+  const lines=[];
+  const groups=[...state.data.categories.map(c=>c[0]), ""];
+  for(const g of groups){
+    const gids=Object.keys(state.picks).filter(id=>(state.picks[id].cat||"")===g);
+    if(!gids.length) continue;
+    lines.push(`## ${g?catLabel(g):"Uncategorized"}`);
+    for(const id of gids){
+      const it=state.picks[id];
+      if(it.upload){ lines.push(`${it.name} — (uploaded image)`); continue; }
+      const {key,nid}=parseQid(id);
+      lines.push(`${it.name} — ${figURL(nid, key)}`);
+    }
+    lines.push("");
+  }
+  const text=lines.join("\n");
+  if(navigator.clipboard) navigator.clipboard.writeText(text).then(
+    ()=>toast("Figma links copied"), ()=>toast("Copy failed"));
+}
+
+async function downloadMoodboard(){
+  toast("Building moodboard…");
+  const toDataURL=async url=>{
+    try{ const b=await (await fetch(url)).blob();
+      return await new Promise(res=>{ const r=new FileReader();
+        r.onload=()=>res(r.result); r.readAsDataURL(b); }); }
+    catch(e){ return null; }
+  };
+  const eschtml=s=>String(s||"").replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+  const groups=[...state.data.categories.map(c=>c[0]), ""];
+  let cards="";
+  for(const g of groups){
+    const gids=Object.keys(state.picks).filter(id=>(state.picks[id].cat||"")===g)
+      .sort((a,b)=>Object.keys(state.picks[b].pickers).length-Object.keys(state.picks[a].pickers).length);
+    if(!gids.length) continue;
+    cards+=`<h2>${eschtml(g?catLabel(g):"Uncategorized")} · ${gids.length}</h2><div class="grid">`;
+    for(const id of gids){
+      const it=state.picks[id];
+      const src=it.upload ? await toDataURL(state.apiBase+"/upload/"+id)
+        : await toDataURL((()=>{ const ql=qlookup(id);
+            return ql&&ql.img ? imgSrc(ql.fs, ql.img) : null; })());
+      const {key,nid}=parseQid(id);
+      const link=it.upload?"":`<a href="${figURL(nid,key)}">Figma ↗</a>`;
+      cards+=`<figure>${src?`<img src="${src}">`:"<div class=noimg>no image</div>"}
+        <figcaption><b>${eschtml(it.name)}</b> · ${eschtml(it.page)}
+        · ${eschtml(Object.keys(it.pickers).join(", "))} ${link}</figcaption></figure>`;
+    }
+    cards+="</div>";
+  }
+  const html=`<!doctype html><meta charset="utf-8"><title>Synthflow Vibe Bucket</title>
+<style>body{font:14px -apple-system,sans-serif;background:#111214;color:#e8e8ea;padding:30px}
+h1{font-size:20px}h2{font-size:15px;color:#8ab4ff;border-bottom:1px solid #2a2d31;padding-bottom:6px;margin-top:30px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+figure{margin:0;background:#1a1c1f;border:1px solid #2a2d31;border-radius:10px;overflow:hidden}
+img{width:100%;display:block;background:#0c0d0e}
+figcaption{padding:8px 10px;font-size:12px;color:#8b8f96}figcaption b{color:#e8e8ea}
+a{color:#8ab4ff;text-decoration:none}.noimg{padding:30px;text-align:center;color:#8b8f96}</style>
+<h1>Synthflow Vibe Bucket — ${new Date().toISOString().slice(0,10)}</h1>${cards}`;
+  const blob=new Blob([html],{type:"text/html"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`vibe-bucket-${new Date().toISOString().slice(0,10)}.html`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast("Moodboard downloaded");
 }
 
 const hint=(k,l)=>{ const s=document.createElement("span"); s.className="hint";
@@ -689,6 +824,8 @@ function foot(){
   } else {
     f.appendChild(hint("click thumb","zoom + re-categorize"));
     f.appendChild(hint("remove","take your pick back"));
+    if(canUpload()) f.appendChild(hint("drop / ⬆","add outside images to the vibe bucket"));
+    f.appendChild(hint("⬇","moodboard = everything, self-contained"));
   }
 }
 
@@ -705,6 +842,7 @@ function setTab(t){
 $("#tabLib").onclick=()=>setTab("lib");
 $("#tabBucket").onclick=()=>setTab("bucket");
 $("#q").oninput=()=>applyFilter();
+$("#hidepicked").onchange=()=>applyFilter();
 $("#pagefilter").onchange=()=>applyFilter();
 $("#whochip").onclick=()=>{ $("#nameinput").value=state.who; $("#namemodal").classList.add("show");
   $("#nameinput").focus(); };
