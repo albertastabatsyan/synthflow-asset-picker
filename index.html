@@ -136,9 +136,21 @@
   #lbstrip .m .tick { position:absolute; top:2px; right:2px; background:var(--pick);
                       color:#0b120d; border-radius:8px; font-size:10px; padding:0 5px;
                       font-weight:700; }
-  #namemodal { position:fixed; inset:0; background:rgba(10,11,12,.93); z-index:60;
+  #namemodal, #helpmodal { position:fixed; inset:0; background:rgba(10,11,12,.93); z-index:60;
                display:none; align-items:center; justify-content:center; }
-  #namemodal.show { display:flex; }
+  #namemodal.show, #helpmodal.show { display:flex; }
+  #helpmodal .hbox { background:var(--panel); border:1px solid var(--line);
+                     border-radius:12px; padding:26px 30px; width:min(640px, 92vw);
+                     max-height:84vh; overflow-y:auto; font-size:13.5px; line-height:1.6; }
+  #helpmodal h2 { margin:0 0 4px; font-size:17px; }
+  #helpmodal .lead { color:var(--dim); margin:0 0 16px; }
+  #helpmodal h3 { font-size:13px; color:var(--acc); text-transform:uppercase;
+                  letter-spacing:.05em; margin:18px 0 6px; }
+  #helpmodal p { margin:0 0 8px; }
+  #helpmodal b { color:var(--pick); }
+  #helpmodal .close { float:right; background:none; border:none; color:var(--dim);
+                      font-size:24px; cursor:pointer; line-height:1; }
+  #helpmodal kbd { margin:0 2px; }
   #namemodal .box { background:var(--panel); border:1px solid var(--line);
                     border-radius:12px; padding:26px; width:320px; }
   #namemodal h2 { margin:0 0 6px; font-size:16px; }
@@ -173,6 +185,7 @@
   <label class="sel"><input type="checkbox" id="hidepicked">hide picked</label>
   <select id="pagefilter"><option value="">All pages</option></select>
   <button class="who" id="whochip">…</button>
+  <button class="tab" id="helpbtn" title="What is this & how to use it">?</button>
 </header>
 
 <main>
@@ -204,9 +217,53 @@
 <div id="namemodal">
   <div class="box">
     <h2>Who's picking?</h2>
-    <p>Your name is shown next to the assets you add to the shared bucket.</p>
+    <p>This is Synthflow's shared vibe-curation gallery — browse the Figma
+       asset libraries, pick the pieces with the right vibe, and everyone
+       sees the pool. Your name tags your picks.</p>
     <input id="nameinput" maxlength="40" placeholder="Your name">
     <button id="namego">Start browsing</button>
+  </div>
+</div>
+
+<div id="helpmodal">
+  <div class="hbox">
+    <button class="close" id="helpclose" title="Close">&times;</button>
+    <h2>Synthflow Asset Picker</h2>
+    <p class="lead">A shared gallery for vibe-curating Synthflow's Figma asset
+      estate. We sweep the libraries together, pool the good pieces in one
+      shared <b>Vibe Bucket</b>, and take the result away as a moodboard.</p>
+
+    <h3>What you're looking at</h3>
+    <p>Every visual from the <b>Social Media &amp; Ads</b> and <b>Marketing</b>
+      Figma files — switch libraries with the buttons next to the title.
+      Near-duplicates are stacked into one card (the ×N corner tag); the page
+      list on the left mirrors the Figma file's pages.</p>
+
+    <h3>Picking</h3>
+    <p><b>+ Pick</b> on any card adds it to the shared bucket in one click —
+      everyone sees it within seconds, tagged with your name. The
+      <b>"pick into"</b> dropdown sets the category your picks land in
+      (optional). Pick the same thing as a teammate and it gets a <b>×2</b>
+      consensus badge and floats up. Click a thumbnail (or press
+      <kbd>Enter</kbd>) to zoom: arrow keys flip through assets
+      (<kbd>←</kbd><kbd>→</kbd>) and near-dupes (<kbd>↑</kbd><kbd>↓</kbd>),
+      number keys <kbd>1-9 0 Q W E</kbd> pick straight into a category,
+      clicking the image closes. In the grid, <kbd>Space</kbd> picks the
+      highlighted card and <b>hide picked</b> keeps your sweep clean.</p>
+
+    <h3>The Vibe Bucket</h3>
+    <p>The shared pool. Grouped by category, consensus first. Remove your own
+      picks any time; re-categorize in zoom. <b>⬆ Upload images</b> (or drag
+      &amp; drop) adds pieces that live outside the libraries — screenshots,
+      exports, references. When the pool is ready, <b>⬇ Download moodboard</b>
+      produces a single file with everything — images, names, credits, Figma
+      links — and <b>Copy Figma links</b> gives the plain-text list.</p>
+
+    <h3>Good to know</h3>
+    <p>Every card's <b>Figma ↗</b> jumps to the real asset in Figma (you need
+      access to that Figma file). Nothing here writes to Figma — picking is
+      opinion-pooling, not moving files. Your name and picks are visible to
+      everyone with the link.</p>
   </div>
 </div>
 
@@ -851,13 +908,23 @@ function saveName(){
   if(!n) return;
   state.who=n; localStorage.setItem("picker_who",n);
   $("#namemodal").classList.remove("show"); updateWho(); refreshPicks(true);
+  if(!localStorage.getItem("picker_seen_help")){   // first visit: show the guide once
+    localStorage.setItem("picker_seen_help","1");
+    openHelp();
+  }
 }
 $("#namego").onclick=saveName;
 $("#nameinput").addEventListener("keydown",e=>{ if(e.key==="Enter") saveName(); });
 
+function openHelp(){ $("#helpmodal").classList.add("show"); }
+function closeHelp(){ $("#helpmodal").classList.remove("show"); }
+$("#helpbtn").onclick=openHelp;
+$("#helpclose").onclick=closeHelp;
+$("#helpmodal").onclick=e=>{ if(e.target.id==="helpmodal") closeHelp(); };
+
 document.addEventListener("keydown",e=>{
   if(e.metaKey||e.ctrlKey) return;
-  if(e.key==="Escape"){ closeLightbox(); return; }
+  if(e.key==="Escape"){ closeLightbox(); closeHelp(); return; }
   if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT") return;
   const k=e.key.toLowerCase();
   if($("#lightbox").classList.contains("show")){
