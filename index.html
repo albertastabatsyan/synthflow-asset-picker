@@ -331,6 +331,11 @@ async function refreshPicks(force){
       const sb=$("#submitbtn"); if(sb){ sb.textContent=`Submit picks (${n})`; sb.disabled=!n; }
     } else {
       p = await (await fetch(state.apiBase+"/picks")).json();
+      for(const id of Object.keys(p)){          // enrich from data.json; the
+        const info=lookup(id);                  // Worker stores only cat+pickers
+        if(info) p[id]={...p[id], ...info};
+        else delete p[id];
+      }
     }
     const j = JSON.stringify(p)+"|"+state.who;
     if(j === state.picksJson && force !== true) return;   // nothing changed — leave the DOM alone
