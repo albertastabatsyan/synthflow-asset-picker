@@ -48,6 +48,7 @@
   .card { background:var(--panel); border:1px solid var(--line); border-radius:10px;
           overflow:hidden; position:relative; display:flex; flex-direction:column; }
   .card.picked { border-color:var(--pick); box-shadow:0 0 0 1px var(--pick); }
+  .card.cur { outline:2px solid var(--acc); outline-offset:2px; }
   .thumbwrap { aspect-ratio:4/3; background:#0c0d0e; cursor:zoom-in;
                display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .thumbwrap img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
@@ -204,7 +205,10 @@ const $ = s => document.querySelector(s);
 const state = { data:null, cards:[], filtered:[], shown:0, picks:{}, picksJson:"",
                 who:localStorage.getItem("picker_who") || "", tab:"lib",
                 lb:{ci:-1, idx:0}, pageTotals:{}, idLoc:{},
-                staticCfg:null, localPicks:{} };
+                staticCfg:null, localPicks:{}, apiBase:"", cursor:-1 };
+/* apiBase: "" = same-origin live server; "<url>" = remote live bucket;
+   null = no live backend — picks queue locally and ship via GitHub issue. */
+function queueMode(){ return state.staticCfg && state.apiBase===null; }
 const CHUNK = 250;
 
 function esc(el, txt){ el.textContent = txt; return el; }
@@ -279,17 +283,25 @@ async function boot(){
   try{ const cf=await fetch("config.json",{cache:"no-store"});
        if(cf.ok) state.staticCfg=await cf.json(); }catch(e){}
   if(state.staticCfg){
-    try{ state.localPicks=JSON.parse(localStorage.getItem("picker_local")||"{}"); }
-    catch(e){ state.localPicks={}; }
-    const sb=document.createElement("button"); sb.className="tab"; sb.id="submitbtn";
-    sb.textContent="Submit picks (0)"; sb.onclick=submitPicks;
-    document.querySelector(".tabs").appendChild(sb);
+    state.apiBase=null;
+    const bu=(state.staticCfg.bucket_url||"").replace(/\/+$/,"");
+    if(bu){
+      try{ const pr=await fetch(bu+"/picks",{signal:AbortSignal.timeout(5000)});
+           if(pr.ok) state.apiBase=bu; }catch(e){}
+    }
+    if(state.apiBase===null){
+      try{ state.localPicks=JSON.parse(localStorage.getItem("picker_local")||"{}"); }
+      catch(e){ state.localPicks={}; }
+      const sb=document.createElement("button"); sb.className="tab"; sb.id="submitbtn";
+      sb.textContent="Submit picks (0)"; sb.onclick=submitPicks;
+      document.querySelector(".tabs").appendChild(sb);
+    }
   }
   await refreshPicks(true);
   applyFilter();
   if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); }
   updateWho(); foot();
-  setInterval(refreshPicks, state.staticCfg ? 45000 : 4000);
+  setInterval(refreshPicks, queueMode() ? 45000 : state.staticCfg ? 8000 : 4000);
 }
 
 function updateWho(){ $("#whochip").textContent = state.who ? `picking as ${state.who}` : "set your name"; }
@@ -297,7 +309,7 @@ function updateWho(){ $("#whochip").textContent = state.who ? `picking as ${stat
 async function refreshPicks(force){
   try{
     let p;
-    if(state.staticCfg){
+    if(queueMode()){
       let shared={};
       try{ const r=await fetch("bucket.json",{cache:"no-store"}); if(r.ok) shared=await r.json(); }
       catch(e){}
@@ -318,7 +330,7 @@ async function refreshPicks(force){
       const n=Object.keys(state.localPicks).length;
       const sb=$("#submitbtn"); if(sb){ sb.textContent=`Submit picks (${n})`; sb.disabled=!n; }
     } else {
-      p = await (await fetch("/picks")).json();
+      p = await (await fetch(state.apiBase+"/picks")).json();
     }
     const j = JSON.stringify(p)+"|"+state.who;
     if(j === state.picksJson && force !== true) return;   // nothing changed — leave the DOM alone
@@ -374,8 +386,30 @@ function applyFilter(){
     if(q && !(c.name.toLowerCase().includes(q) || c.page.toLowerCase().includes(q))) return false;
     return true;
   });
-  $("#grid").innerHTML = ""; state.shown = 0;
+  $("#grid").innerHTML = ""; state.shown = 0; state.cursor = -1;
   renderMore(); renderSidebar();
+}
+
+function moveCursor(dir){
+  if(!state.filtered.length) return;
+  state.cursor = state.cursor<0 ? 0
+    : Math.min(Math.max(state.cursor+dir,0), state.filtered.length-1);
+  while(state.shown<=state.cursor && state.shown<state.filtered.length) renderMore();
+  updateCursorUI();
+}
+function updateCursorUI(){
+  document.querySelectorAll("#grid .card.cur").forEach(el=>el.classList.remove("cur"));
+  const el=$("#grid").children[state.cursor];
+  if(el){ el.classList.add("cur"); el.scrollIntoView({block:"nearest",behavior:"smooth"}); }
+}
+function cyclePage(dir){
+  const pages=["",...Object.keys(state.pageTotals)];
+  const nx=Math.min(Math.max(pages.indexOf($("#pagefilter").value)+dir,0),pages.length-1);
+  if(pages[nx]===$("#pagefilter").value) return;
+  $("#pagefilter").value=pages[nx];
+  applyFilter();
+  state.cursor=0; updateCursorUI();
+  toast(pages[nx]||"All pages");
 }
 
 function renderMore(){
@@ -426,7 +460,7 @@ function submitPicks(){
 }
 
 async function doPick(id, action, cat){
-  if(state.staticCfg){
+  if(queueMode()){
     if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); return; }
     if(action==="remove"){
       if(state.localPicks[id]){ delete state.localPicks[id]; toast("Removed (was not yet submitted)"); }
@@ -441,8 +475,8 @@ async function doPick(id, action, cat){
   }
   const body={who:state.who, id, action};
   if(cat!==undefined) body.cat=cat;
-  const r = await fetch("/pick",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(body)});
+  const r = await fetch(state.apiBase+"/pick",{method:"POST",
+    headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
   if(r.status===204){
     toast(action==="remove" ? "Removed your pick" :
           action==="recat"  ? "→ "+(catLabel(cat)||"no category") :
@@ -572,11 +606,11 @@ const hint=(k,l)=>{ const s=document.createElement("span"); s.className="hint";
 function foot(){
   const f=$("#foot"); f.innerHTML="";
   if(state.tab==="lib"){
+    f.appendChild(hint("←→ ↑↓","browse items · pages"));
+    f.appendChild(hint("Space","pick highlighted · 1-9 0 Q W E with category"));
+    f.appendChild(hint("Enter / click","zoom · click image closes"));
     f.appendChild(hint("+ Pick","one click → the “pick into” category"));
-    f.appendChild(hint("click thumb","zoom"));
-    f.appendChild(hint("←→","flip assets · click image closes"));
-    f.appendChild(hint("1-9 0 Q W E","category in zoom"));
-    if(state.staticCfg) f.appendChild(hint("Submit","opens a GitHub issue with your picks"));
+    if(queueMode()) f.appendChild(hint("Submit","opens a GitHub issue with your picks"));
   } else {
     f.appendChild(hint("click thumb","zoom + re-categorize"));
     f.appendChild(hint("remove","take your pick back"));
@@ -612,17 +646,29 @@ document.addEventListener("keydown",e=>{
   if(e.metaKey||e.ctrlKey) return;
   if(e.key==="Escape"){ closeLightbox(); return; }
   if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT") return;
-  if(!$("#lightbox").classList.contains("show")) return;
   const k=e.key.toLowerCase();
-  if(k==="arrowright"){ navCard(1); return; }
-  if(k==="arrowleft"){ navCard(-1); return; }
-  if(k==="arrowdown"){ const c=state.cards[state.lb.ci]; e.preventDefault();
-    state.lb.idx=Math.min(state.lb.idx+1, c.members.length-1); renderLightbox(); return; }
-  if(k==="arrowup"){ e.preventDefault();
-    state.lb.idx=Math.max(state.lb.idx-1,0); renderLightbox(); return; }
-  if(k==="f"){ const m=lbCur(); if(m) window.open(figURL(m.id),"_blank","noopener"); return; }
-  const cat=(state.data.categories||[]).find(c=>c[0]===k);
-  if(cat) lbAssign(cat[0]);
+  if($("#lightbox").classList.contains("show")){
+    if(k==="arrowright"){ navCard(1); return; }
+    if(k==="arrowleft"){ navCard(-1); return; }
+    if(k==="arrowdown"){ const c=state.cards[state.lb.ci]; e.preventDefault();
+      state.lb.idx=Math.min(state.lb.idx+1, c.members.length-1); renderLightbox(); return; }
+    if(k==="arrowup"){ e.preventDefault();
+      state.lb.idx=Math.max(state.lb.idx-1,0); renderLightbox(); return; }
+    if(k==="f"){ const m=lbCur(); if(m) window.open(figURL(m.id),"_blank","noopener"); return; }
+    const cat=(state.data.categories||[]).find(c=>c[0]===k);
+    if(cat) lbAssign(cat[0]);
+    return;
+  }
+  if(state.tab!=="lib") return;
+  if(k==="arrowright"||k==="arrowleft"){ e.preventDefault(); moveCursor(k==="arrowright"?1:-1); return; }
+  if(k==="arrowdown"||k==="arrowup"){ e.preventDefault(); cyclePage(k==="arrowdown"?1:-1); return; }
+  if(state.cursor>=0 && state.cursor<state.filtered.length){
+    const c=state.cards[state.filtered[state.cursor]];
+    if(e.key==="Enter"){ openLightbox(state.filtered[state.cursor],0); return; }
+    if(e.key===" "||e.code==="Space"){ e.preventDefault(); togglePick(c.id); return; }
+    const cat=(state.data.categories||[]).find(x=>x[0]===k);
+    if(cat){ doPick(c.id, state.picks[c.id] ? "recat" : "add", cat[0]); }
+  }
 });
 
 boot();
