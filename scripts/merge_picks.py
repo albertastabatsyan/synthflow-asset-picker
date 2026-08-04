@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Merge a "picks:" issue's JSON payload into bucket.json (add/overlay only)."""
+"""Merge a "picks:" issue's JSON payload into bucket.json (add/overlay only).
+
+Valid ids are "<fileKey>~<nodeId>" over every file listed in config.json.
+"""
 import json, os, re, sys, time
 
 body = os.environ.get("ISSUE_BODY", "")
@@ -11,11 +14,14 @@ try:
 except ValueError:
     print("bad json"); sys.exit(0)
 who = re.sub(r"[^\w \-.]", "", str(payload.get("who", "anon")))[:40].strip() or "anon"
-d = json.load(open("data.json"))
-cats = {k for k, _ in d["categories"]}
-ids = set()
-for c in d["clusters"]:
-    ids.add(c["id"]); ids.update(mm["id"] for mm in c["members"])
+cfg = json.load(open("config.json"))
+ids, cats = set(), set()
+for f in cfg.get("files", []):
+    d = json.load(open(os.path.join(f["dir"], "data.json")))
+    cats.update(k for k, _ in d["categories"])
+    for c in d["clusters"]:
+        ids.add(f'{f["key"]}~{c["id"]}')
+        ids.update(f'{f["key"]}~{mm["id"]}' for mm in c["members"])
 try:
     bucket = json.load(open("bucket.json"))
 except Exception:
