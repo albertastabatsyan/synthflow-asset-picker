@@ -1,0 +1,37 @@
+name: collect-picks
+on:
+  issues:
+    types: [opened, edited]
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: bucket-merge
+  cancel-in-progress: false
+jobs:
+  merge:
+    if: startsWith(github.event.issue.title, 'picks:')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Merge picks into bucket.json
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: python3 scripts/merge_picks.py
+      - name: Commit bucket
+        run: |
+          git config user.name "picks-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add bucket.json
+          git diff --cached --quiet || git commit -m "bucket: merge picks from #${{ github.event.issue.number }}"
+          git pull --rebase origin main || true
+          git push
+      - name: Close issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh issue close ${{ github.event.issue.number }}
+          --comment "Picks recorded in the shared bucket. The site updates within a minute or two."
+          --repo ${{ github.repository }}

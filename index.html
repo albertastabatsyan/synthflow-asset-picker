@@ -1,0 +1,629 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthflow Asset Picker</title>
+<style>
+  :root { --bg:#111214; --panel:#1a1c1f; --line:#2a2d31; --txt:#e8e8ea; --dim:#8b8f96;
+          --pick:#46c270; --acc:#8ab4ff; --lime:#b5ff90; --danger:#ea4a4b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); height:100vh;
+         display:flex; flex-direction:column;
+         font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  header { background:var(--bg); border-bottom:1px solid var(--line); padding:10px 16px;
+           display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  header h1 { font-size:15px; margin:0 8px 0 0; font-weight:600; white-space:nowrap; }
+  header .sub { color:var(--dim); font-size:12px; margin-right:auto; }
+  .tabs { display:flex; gap:6px; }
+  .tab { background:var(--panel); border:1px solid var(--line); color:var(--txt);
+         padding:6px 14px; border-radius:8px; cursor:pointer; font-size:13px; }
+  .tab.active { border-color:var(--pick); color:var(--pick); }
+  .tab:disabled { opacity:.4; cursor:default; }
+  .tab .badge { background:var(--pick); color:#0b120d; border-radius:10px;
+                padding:0 7px; margin-left:6px; font-weight:700; font-size:12px; }
+  input[type=search], header select {
+    background:var(--panel); border:1px solid var(--line); color:var(--txt);
+    padding:6px 10px; border-radius:8px; font-size:13px; outline:none; max-width:230px; }
+  input[type=search] { width:200px; }
+  #pagefilter { display:none; }
+  label.sel { color:var(--dim); font-size:13px; display:flex; gap:6px; align-items:center; }
+  #pickcat { border-color:var(--pick); }
+  .who { background:var(--panel); border:1px dashed var(--line); color:var(--acc);
+         padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px; }
+  main { flex:1; display:flex; min-height:0; }
+  #sidebar { width:280px; overflow-y:auto; border-right:1px solid var(--line); padding:8px; flex:none; }
+  .sechead { color:var(--dim); font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+             padding:10px 8px 4px; }
+  .prow { padding:5px 8px; border-radius:6px; cursor:pointer; display:flex; gap:8px;
+          align-items:center; font-size:13px; }
+  .prow:hover { background:var(--panel); }
+  .prow.cur { background:var(--panel); outline:1px solid var(--line); }
+  .prow .nm { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .prow .ct { color:var(--dim); font-size:12px; font-variant-numeric:tabular-nums; }
+  .prow .ct b { color:var(--pick); font-weight:600; }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--line); flex:none; }
+  .dot.on { background:var(--pick); }
+  #stage { flex:1; overflow-y:auto; min-width:0; }
+  #grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+          gap:12px; padding:16px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+          overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .card.picked { border-color:var(--pick); box-shadow:0 0 0 1px var(--pick); }
+  .thumbwrap { aspect-ratio:4/3; background:#0c0d0e; cursor:zoom-in;
+               display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .thumbwrap img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+  .noimg { color:var(--dim); font-size:11px; padding:8px; text-align:center; }
+  .cmeta { padding:8px 10px; display:flex; gap:8px; align-items:center; }
+  .cname { font-size:12px; flex:1; overflow:hidden; text-overflow:ellipsis;
+           white-space:nowrap; }
+  .cpage { color:var(--dim); font-size:11px; padding:0 10px 8px; display:flex;
+           gap:6px; align-items:center; }
+  .cpage .pg { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .catbadge { color:var(--pick); font-size:11px; padding:0 10px 8px; overflow:hidden;
+              text-overflow:ellipsis; white-space:nowrap; }
+  .figlink { color:var(--acc); text-decoration:none; font-size:12px; white-space:nowrap; }
+  .figlink:hover { color:var(--lime); text-decoration:underline; }
+  .mcount { position:absolute; top:8px; left:8px; background:rgba(0,0,0,.65);
+            color:#fff; font-size:11px; padding:2px 7px; border-radius:9px; }
+  .pickbtn { border:1px solid var(--line); background:#232529; color:var(--txt);
+             border-radius:7px; padding:3px 10px; cursor:pointer; font-size:12px;
+             white-space:nowrap; }
+  .pickbtn.on { background:var(--pick); border-color:var(--pick); color:#0b120d;
+                font-weight:600; }
+  .pickers { display:flex; flex-wrap:wrap; gap:4px; padding:0 10px 9px; }
+  .chip { background:#232529; border:1px solid var(--line); color:var(--acc);
+          font-size:11px; padding:1px 8px; border-radius:9px; }
+  #sentinel { height:1px; }
+  #bucketview { padding:16px; display:none; }
+  #bucketview.show { display:block; }
+  #bucketview .empty { color:var(--dim); padding:40px; text-align:center; }
+  .bhead { margin:20px 0 10px; font-size:13px; font-weight:600; color:var(--acc);
+           border-bottom:1px solid var(--line); padding-bottom:6px; }
+  .bhead:first-child { margin-top:0; }
+  .bhead .n { color:var(--dim); font-weight:400; }
+  .bgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; }
+  .rmbtn { border:1px solid var(--line); background:none; color:var(--danger);
+           border-radius:7px; padding:3px 10px; cursor:pointer; font-size:12px; }
+  footer { border-top:1px solid var(--line); padding:7px 16px; display:flex; gap:14px;
+           flex-wrap:wrap; }
+  kbd { background:var(--panel); border:1px solid var(--line); border-bottom-width:2px;
+        border-radius:4px; padding:1px 6px; font:12px ui-monospace,monospace; }
+  .hint { color:var(--dim); font-size:12px; display:flex; align-items:center; gap:5px; }
+  #lightbox { position:fixed; inset:0; background:rgba(10,11,12,.93); z-index:50;
+              display:none; flex-direction:column; }
+  #lightbox.show { display:flex; }
+  #lbtop { display:flex; gap:12px; align-items:center; padding:12px 18px; flex-wrap:wrap; }
+  #lbcount { color:var(--dim); font-size:12px; font-variant-numeric:tabular-nums; }
+  #lbname { font-size:14px; flex:1; overflow:hidden; text-overflow:ellipsis;
+            white-space:nowrap; min-width:120px; }
+  #lbcat { color:var(--pick); font-size:12px; white-space:nowrap; }
+  #lbfigbig { color:var(--acc); text-decoration:none; font-size:13px; white-space:nowrap;
+              border:1px solid var(--acc); border-radius:7px; padding:3px 10px; }
+  #lbfigbig:hover { color:var(--lime); border-color:var(--lime); }
+  #lbclose { background:none; border:none; color:var(--dim); font-size:26px;
+             cursor:pointer; line-height:1; }
+  #lbcats { display:flex; flex-wrap:wrap; gap:6px; padding:0 18px 8px; }
+  #lbcats .cchip { background:var(--panel); border:1px solid var(--line); border-radius:6px;
+                   padding:3px 9px; cursor:pointer; font-size:12px; color:var(--txt); }
+  #lbcats .cchip:hover { border-color:var(--lime); }
+  #lbcats .cchip.cur { border-color:var(--pick); color:var(--pick); }
+  #lbcats .cchip kbd { margin-right:5px; }
+  #lbimg { flex:1; display:flex; align-items:center; justify-content:center;
+           min-height:0; padding:0 18px; cursor:zoom-out; }
+  #lbimg img { max-width:100%; max-height:100%; object-fit:contain; }
+  .lbnav { position:fixed; top:50%; transform:translateY(-50%); z-index:55;
+           background:rgba(26,28,31,.85); border:1px solid var(--line); color:var(--txt);
+           font-size:24px; width:44px; height:64px; border-radius:10px; cursor:pointer; }
+  .lbnav:hover { border-color:var(--acc); color:var(--acc); }
+  .lbnav:disabled { opacity:.25; cursor:default; }
+  #lbprev { left:14px; } #lbnext { right:14px; }
+  #lbstrip { display:flex; gap:8px; overflow-x:auto; padding:12px 18px; }
+  #lbstrip .m { flex:0 0 auto; width:86px; cursor:pointer; border:2px solid var(--line);
+                border-radius:8px; overflow:hidden; background:#0c0d0e; position:relative; }
+  #lbstrip .m.cur { border-color:var(--acc); }
+  #lbstrip .m.picked { border-color:var(--pick); }
+  #lbstrip .m img { width:100%; height:62px; object-fit:contain; display:block; }
+  #lbstrip .m .tick { position:absolute; top:2px; right:2px; background:var(--pick);
+                      color:#0b120d; border-radius:8px; font-size:10px; padding:0 5px;
+                      font-weight:700; }
+  #namemodal { position:fixed; inset:0; background:rgba(10,11,12,.93); z-index:60;
+               display:none; align-items:center; justify-content:center; }
+  #namemodal.show { display:flex; }
+  #namemodal .box { background:var(--panel); border:1px solid var(--line);
+                    border-radius:12px; padding:26px; width:320px; }
+  #namemodal h2 { margin:0 0 6px; font-size:16px; }
+  #namemodal p { color:var(--dim); font-size:13px; margin:0 0 14px; }
+  #namemodal input { width:100%; margin-bottom:12px; background:var(--bg);
+                     border:1px solid var(--line); color:var(--txt); padding:8px 10px;
+                     border-radius:8px; font-size:14px; outline:none; }
+  #namemodal button { width:100%; background:var(--pick); border:none; color:#0b120d;
+                      font-weight:600; padding:9px; border-radius:8px; cursor:pointer;
+                      font-size:14px; }
+  #toast { position:fixed; bottom:52px; left:50%; transform:translateX(-50%);
+           background:var(--panel); border:1px solid var(--line); border-radius:9px;
+           padding:8px 16px; font-size:13px; display:none; z-index:70; }
+  @media (max-width:900px){
+    #sidebar { display:none; }
+    #pagefilter { display:inline-block; }
+  }
+</style>
+
+<header>
+  <h1>Synthflow Asset Picker</h1>
+  <span class="sub" id="sub">loading…</span>
+  <div class="tabs">
+    <button class="tab active" id="tabLib">Library</button>
+    <button class="tab" id="tabBucket">Bucket<span class="badge" id="bcount">0</span></button>
+  </div>
+  <label class="sel">pick into
+    <select id="pickcat"><option value="">no category</option></select>
+  </label>
+  <input type="search" id="q" placeholder="Search name or page…">
+  <select id="pagefilter"><option value="">All pages</option></select>
+  <button class="who" id="whochip">…</button>
+</header>
+
+<main>
+  <div id="sidebar"></div>
+  <div id="stage">
+    <div id="grid"></div>
+    <div id="sentinel"></div>
+    <div id="bucketview"></div>
+  </div>
+</main>
+<footer id="foot"></footer>
+
+<div id="lightbox">
+  <div id="lbtop">
+    <span id="lbcount"></span>
+    <span id="lbname"></span>
+    <span id="lbcat"></span>
+    <a id="lbfigbig" target="_blank" rel="noopener">Open in Figma ↗</a>
+    <button class="pickbtn" id="lbpick">Add to bucket</button>
+    <button id="lbclose" title="Close">&times;</button>
+  </div>
+  <div id="lbcats"></div>
+  <div id="lbimg" title="Click to close"></div>
+  <button class="lbnav" id="lbprev" title="Previous asset (←)">‹</button>
+  <button class="lbnav" id="lbnext" title="Next asset (→)">›</button>
+  <div id="lbstrip"></div>
+</div>
+
+<div id="namemodal">
+  <div class="box">
+    <h2>Who's picking?</h2>
+    <p>Your name is shown next to the assets you add to the shared bucket.</p>
+    <input id="nameinput" maxlength="40" placeholder="Your name">
+    <button id="namego">Start browsing</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const state = { data:null, cards:[], filtered:[], shown:0, picks:{}, picksJson:"",
+                who:localStorage.getItem("picker_who") || "", tab:"lib",
+                lb:{ci:-1, idx:0}, pageTotals:{}, idLoc:{},
+                staticCfg:null, localPicks:{} };
+const CHUNK = 250;
+
+function esc(el, txt){ el.textContent = txt; return el; }
+function el(cls, txt){ const d=document.createElement("div"); d.className=cls;
+  if(txt!==undefined) d.textContent=txt; return d; }
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.style.display="block";
+  clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none", 1800); }
+function catLabel(k){ const c=(state.data.categories||[]).find(c=>c[0]===k);
+  return c ? c[1] : ""; }
+function activeCat(){ const v=$("#pickcat").value;
+  return (state.data.categories||[]).some(c=>c[0]===v) ? v : ""; }
+function figURL(id){ return `https://www.figma.com/design/${state.data.meta.file_key}/?node-id=${id.replace(/[:;]/g,"-")}`; }
+function figA(id){ const a=document.createElement("a"); a.className="figlink";
+  a.href=figURL(id); a.target="_blank"; a.rel="noopener"; a.title="Open this asset in Figma";
+  a.textContent="Figma ↗"; a.onclick=e=>e.stopPropagation(); return a; }
+function hideOnErr(im){ im.onerror=()=>{ im.style.display="none"; }; return im; }
+
+/* Shared card skeleton: thumb + name row + page/Figma row. */
+function baseCard(id, info, onZoom){
+  const card=el("card");
+  const tw=el("thumbwrap");
+  if(info.img){ const im=document.createElement("img"); im.loading="lazy";
+    im.src="renders/"+info.img; tw.appendChild(hideOnErr(im)); }
+  else tw.appendChild(el("noimg", info.noimg||"no render"));
+  if(onZoom) tw.onclick=onZoom;
+  card.appendChild(tw);
+  const meta=el("cmeta");
+  meta.appendChild(el("cname", info.name));
+  card.appendChild(meta);
+  const pg=el("cpage");
+  pg.appendChild(Object.assign(el("pg", info.page),{className:"pg"}));
+  pg.appendChild(figA(id));
+  card.appendChild(pg);
+  return {card, meta};
+}
+
+function catList(container, make){
+  for(const [k,label] of state.data.categories) container.appendChild(make(k,label));
+}
+
+async function boot(){
+  const d = await (await fetch("data.json")).json();
+  state.data = d;
+  state.cards = d.clusters;
+  state.cards.forEach((c,ci)=>{
+    state.pageTotals[c.page]=(state.pageTotals[c.page]||0)+1;
+    c.members.forEach((m,mi)=>{ if(!(m.id in state.idLoc)) state.idLoc[m.id]=[ci,mi]; });
+    if(!(c.id in state.idLoc)) state.idLoc[c.id]=[ci,0];
+  });
+  const assets = state.cards.reduce((n,c)=>n+c.members.length, 0);
+  $("#sub").textContent = `${d.meta.name} — ${state.cards.length.toLocaleString()} groups · ${assets.toLocaleString()} assets`;
+  for(const p of Object.keys(state.pageTotals)){
+    const o=document.createElement("option"); o.value=p; esc(o,p);
+    $("#pagefilter").appendChild(o);
+  }
+  for(const [k,label] of d.categories){
+    const o=document.createElement("option"); o.value=k; esc(o,label);
+    $("#pickcat").appendChild(o);
+  }
+  const savedCat=localStorage.getItem("picker_cat")||"";
+  if(d.categories.some(c=>c[0]===savedCat)) $("#pickcat").value=savedCat;
+  $("#pickcat").onchange=()=>localStorage.setItem("picker_cat", $("#pickcat").value);
+  catList($("#lbcats"), (k,label)=>{
+    const c=document.createElement("span"); c.className="cchip"; c.dataset.k=k; c.title=label;
+    const kb=document.createElement("kbd"); kb.textContent=k.toUpperCase(); c.appendChild(kb);
+    c.appendChild(document.createTextNode(label.slice(5)));
+    c.onclick=()=>lbAssign(k);
+    return c;
+  });
+  /* Static hosting (GitHub Pages): config.json exists there and never on the
+     live server. Picks then queue locally and ship via a GitHub issue. */
+  try{ const cf=await fetch("config.json",{cache:"no-store"});
+       if(cf.ok) state.staticCfg=await cf.json(); }catch(e){}
+  if(state.staticCfg){
+    try{ state.localPicks=JSON.parse(localStorage.getItem("picker_local")||"{}"); }
+    catch(e){ state.localPicks={}; }
+    const sb=document.createElement("button"); sb.className="tab"; sb.id="submitbtn";
+    sb.textContent="Submit picks (0)"; sb.onclick=submitPicks;
+    document.querySelector(".tabs").appendChild(sb);
+  }
+  await refreshPicks(true);
+  applyFilter();
+  if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); }
+  updateWho(); foot();
+  setInterval(refreshPicks, state.staticCfg ? 45000 : 4000);
+}
+
+function updateWho(){ $("#whochip").textContent = state.who ? `picking as ${state.who}` : "set your name"; }
+
+async function refreshPicks(force){
+  try{
+    let p;
+    if(state.staticCfg){
+      let shared={};
+      try{ const r=await fetch("bucket.json",{cache:"no-store"}); if(r.ok) shared=await r.json(); }
+      catch(e){}
+      p={};
+      for(const id in shared){ const info=lookup(id); if(!info) continue;
+        p[id]={...info, cat:shared[id].cat||"", pickers:{...(shared[id].pickers||{})}}; }
+      let changed=false;
+      for(const id of Object.keys(state.localPicks)){
+        const lp=state.localPicks[id], info=lookup(id);
+        if(!info){ delete state.localPicks[id]; changed=true; continue; }
+        if(p[id] && p[id].pickers[state.who] && (p[id].cat||"")===(lp.cat||"")){
+          delete state.localPicks[id]; changed=true; continue; }   // merged upstream
+        const it=p[id] || (p[id]={...info, cat:lp.cat||"", pickers:{}});
+        it.pickers[state.who||"me"]=lp.ts||"";
+        it.cat=lp.cat||it.cat||"";
+      }
+      if(changed) persistLocal();
+      const n=Object.keys(state.localPicks).length;
+      const sb=$("#submitbtn"); if(sb){ sb.textContent=`Submit picks (${n})`; sb.disabled=!n; }
+    } else {
+      p = await (await fetch("/picks")).json();
+    }
+    const j = JSON.stringify(p)+"|"+state.who;
+    if(j === state.picksJson && force !== true) return;   // nothing changed — leave the DOM alone
+    state.picksJson = j;
+    state.picks = p;
+    $("#bcount").textContent = Object.keys(p).length;
+    document.querySelectorAll("#grid .card").forEach(cardEl=>{
+      const c = state.cards[cardEl.dataset.ci];
+      const inb = c.members.some(m=>p[m.id]) || p[c.id];
+      cardEl.classList.toggle("picked", !!inb);
+      const b = cardEl.querySelector(".pickbtn");
+      b.classList.toggle("on", !!p[c.id]);
+      b.textContent = p[c.id] ? "In bucket" : "+ Pick";
+      esc(cardEl.querySelector(".catbadge"), p[c.id] && p[c.id].cat ? catLabel(p[c.id].cat) : "");
+    });
+    renderSidebar();
+    if(state.tab==="bucket") renderBucket();
+    if($("#lightbox").classList.contains("show")) renderLightbox();
+  }catch(e){}
+}
+
+function renderSidebar(){
+  const sb=$("#sidebar"); sb.innerHTML="";
+  const pagePicked={};
+  for(const id in state.picks) pagePicked[state.picks[id].page]=(pagePicked[state.picks[id].page]||0)+1;
+  const row=(name,n,total,cur,onclick)=>{
+    const r=el("prow"+(cur?" cur":""));
+    const dot=el("dot"); if(n) dot.classList.add("on"); r.appendChild(dot);
+    r.appendChild(Object.assign(el("nm",name),{className:"nm"}));
+    const ct=el("ct"); ct.className="ct";
+    if(n){ const b=document.createElement("b"); b.textContent=n; ct.appendChild(b);
+      ct.appendChild(document.createTextNode("/"+total)); }
+    else ct.textContent=String(total);
+    r.appendChild(ct);
+    r.onclick=onclick;
+    return r;
+  };
+  sb.appendChild(el("sechead","Pages"));
+  const pf=$("#pagefilter").value;
+  sb.appendChild(row("All pages", 0, state.cards.length, pf===""&&state.tab==="lib",
+    ()=>{ $("#pagefilter").value=""; setTab("lib"); applyFilter(); }));
+  for(const p of Object.keys(state.pageTotals))
+    sb.appendChild(row(p, pagePicked[p]||0, state.pageTotals[p], pf===p&&state.tab==="lib",
+      ()=>{ $("#pagefilter").value=p; setTab("lib"); applyFilter(); }));
+}
+
+function applyFilter(){
+  const q = $("#q").value.trim().toLowerCase();
+  const pf = $("#pagefilter").value;
+  state.filtered = state.cards.map((c,i)=>i).filter(i=>{
+    const c = state.cards[i];
+    if(pf && c.page!==pf) return false;
+    if(q && !(c.name.toLowerCase().includes(q) || c.page.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  $("#grid").innerHTML = ""; state.shown = 0;
+  renderMore(); renderSidebar();
+}
+
+function renderMore(){
+  const frag = document.createDocumentFragment();
+  const end = Math.min(state.shown+CHUNK, state.filtered.length);
+  for(let k=state.shown; k<end; k++){
+    const ci = state.filtered[k], c = state.cards[ci];
+    const {card, meta} = baseCard(c.id,
+      {img:c.img, name:c.name, page:c.page, noimg:"no render — "+c.name},
+      ()=>openLightbox(ci,0));
+    card.dataset.ci=ci;
+    if(state.picks[c.id] || c.members.some(m=>state.picks[m.id])) card.classList.add("picked");
+    if(c.members.length>1){ const mc=document.createElement("span"); mc.className="mcount";
+      mc.textContent="×"+c.members.length; card.appendChild(mc); }
+    const pb=document.createElement("button"); pb.className="pickbtn";
+    pb.textContent = state.picks[c.id] ? "In bucket" : "+ Pick";
+    if(state.picks[c.id]) pb.classList.add("on");
+    pb.onclick=e=>{ e.stopPropagation(); togglePick(c.id); };
+    meta.appendChild(pb);
+    const cb=el("catbadge");
+    if(state.picks[c.id] && state.picks[c.id].cat) cb.textContent=catLabel(state.picks[c.id].cat);
+    card.appendChild(cb);
+    frag.appendChild(card);
+  }
+  state.shown = end;
+  $("#grid").appendChild(frag);
+}
+
+new IntersectionObserver(es=>{ if(es[0].isIntersecting && state.shown<state.filtered.length) renderMore(); },
+  {rootMargin:"1200px"}).observe($("#sentinel"));
+
+function lookup(id){ const loc=state.idLoc[id]; if(!loc) return null;
+  const c=state.cards[loc[0]], m=c.members[loc[1]]||{};
+  return {img:m.img||c.img, name:m.name||c.name, page:c.page}; }
+function persistLocal(){ localStorage.setItem("picker_local", JSON.stringify(state.localPicks)); }
+function submitPicks(){
+  const ids=Object.keys(state.localPicks); if(!ids.length) return;
+  const who=state.who||"anon";
+  const picks=ids.map(id=>({id, cat:state.localPicks[id].cat||""}));
+  const body="```json\n"+JSON.stringify({who, picks})+"\n```";
+  const base=`https://github.com/${state.staticCfg.issue_repo}/issues/new`;
+  const url=`${base}?title=${encodeURIComponent("picks: "+who)}&body=${encodeURIComponent(body)}`;
+  if(url.length<7000){ window.open(url,"_blank","noopener");
+    toast("Submit the pre-filled GitHub issue — picks go into the shared bucket"); }
+  else { if(navigator.clipboard) navigator.clipboard.writeText(body);
+    window.open(base,"_blank","noopener");
+    toast("Picks JSON copied — paste it as the issue body"); }
+}
+
+async function doPick(id, action, cat){
+  if(state.staticCfg){
+    if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); return; }
+    if(action==="remove"){
+      if(state.localPicks[id]){ delete state.localPicks[id]; toast("Removed (was not yet submitted)"); }
+      else { toast("Already submitted — picks in the shared bucket stay"); return; }
+    } else {
+      state.localPicks[id]={cat:cat||"", ts:new Date().toISOString().slice(0,19)};
+      toast((cat ? "→ "+catLabel(cat) : "Picked")+" — submit to share");
+    }
+    persistLocal();
+    await refreshPicks(true);
+    return;
+  }
+  const body={who:state.who, id, action};
+  if(cat!==undefined) body.cat=cat;
+  const r = await fetch("/pick",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(body)});
+  if(r.status===204){
+    toast(action==="remove" ? "Removed your pick" :
+          action==="recat"  ? "→ "+(catLabel(cat)||"no category") :
+          cat ? "Added → "+catLabel(cat) : "Added to bucket");
+    await refreshPicks();
+  } else toast("Pick failed");
+}
+
+/* One click picks straight into the header's "pick into" category. */
+function togglePick(id){
+  if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); return; }
+  const it = state.picks[id];
+  if(it && it.pickers[state.who]) return doPick(id,"remove");
+  if(it) return doPick(id,"add",it.cat||"");
+  doPick(id,"add",activeCat());
+}
+
+function lbCur(){
+  const c=state.cards[state.lb.ci]; if(!c) return null;
+  return c.members[state.lb.idx] || {id:c.id, img:c.img, name:c.name};
+}
+function lbAssign(k){
+  if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); return; }
+  const m=lbCur(); if(!m) return;
+  doPick(m.id, state.picks[m.id] ? "recat" : "add", k);
+}
+function navList(){
+  const list = state.filtered.includes(state.lb.ci)
+    ? state.filtered : state.cards.map((c,i)=>i);
+  return {list, pos:list.indexOf(state.lb.ci)};
+}
+function navCard(dir){
+  const {list,pos}=navList(); if(pos<0) return;
+  const np=pos+dir; if(np<0||np>=list.length) return;
+  openLightbox(list[np],0);
+}
+function openLightbox(ci, idx){
+  state.lb={ci, idx};
+  $("#lightbox").classList.add("show");
+  renderLightbox();
+}
+function openLightboxById(id){
+  const loc=state.idLoc[id]; if(loc) openLightbox(loc[0], loc[1]);
+}
+function closeLightbox(){ $("#lightbox").classList.remove("show"); }
+function renderLightbox(){
+  const c=state.cards[state.lb.ci]; if(!c) return;
+  const m=lbCur();
+  const {list,pos}=navList();
+  $("#lbcount").textContent = `${pos+1}/${list.length}` +
+    (c.members.length>1 ? ` · dupe ${state.lb.idx+1}/${c.members.length}` : "");
+  $("#lbprev").disabled = pos<=0;
+  $("#lbnext").disabled = pos>=list.length-1;
+  esc($("#lbname"), `${m.name || c.name} — ${c.page}`);
+  const it=state.picks[m.id];
+  esc($("#lbcat"), it && it.cat ? catLabel(it.cat) : "");
+  $("#lbfigbig").href=figURL(m.id);
+  document.querySelectorAll("#lbcats .cchip").forEach(ch=>
+    ch.classList.toggle("cur", !!(it && it.cat===ch.dataset.k)));
+  const pb=$("#lbpick");
+  const mine = it && it.pickers[state.who];
+  pb.textContent = it ? (mine?"In bucket ✓ (remove)":"In bucket ✓ (add my pick)") : "+ Add to bucket";
+  pb.classList.toggle("on", !!it);
+  pb.onclick=()=>togglePick(m.id);
+  const box=$("#lbimg"); box.innerHTML="";
+  if(m.img){ const im=document.createElement("img"); im.src="renders/"+m.img;
+    box.appendChild(hideOnErr(im)); }
+  else box.appendChild(el("noimg","no render for this asset"));
+  const strip=$("#lbstrip"); strip.innerHTML="";
+  c.members.forEach((mm,i)=>{
+    const d=el("m"); d.className="m";
+    if(i===state.lb.idx) d.classList.add("cur");
+    if(state.picks[mm.id]){ d.classList.add("picked");
+      const t=document.createElement("span"); t.className="tick"; t.textContent="✓"; d.appendChild(t); }
+    if(mm.img){ const im=document.createElement("img"); im.loading="lazy";
+      im.src="renders/"+mm.img; d.appendChild(hideOnErr(im)); }
+    d.onclick=()=>{ state.lb.idx=i; renderLightbox(); };
+    strip.appendChild(d);
+  });
+}
+$("#lbclose").onclick=closeLightbox;
+$("#lbimg").onclick=closeLightbox;                     // click the zoomed image to close
+$("#lightbox").onclick=e=>{ if(e.target.id==="lightbox") closeLightbox(); };
+$("#lbprev").onclick=e=>{ e.stopPropagation(); navCard(-1); };
+$("#lbnext").onclick=e=>{ e.stopPropagation(); navCard(1); };
+
+function bucketItemCard(id, it){
+  const {card, meta} = baseCard(id, {img:it.img, name:it.name, page:it.page},
+    ()=>openLightboxById(id));
+  card.classList.add("picked");
+  if(it.pickers[state.who]){
+    const rm=document.createElement("button"); rm.className="rmbtn"; rm.textContent="remove";
+    rm.onclick=()=>doPick(id,"remove"); meta.appendChild(rm);
+  }
+  const chips=el("pickers");
+  for(const w of Object.keys(it.pickers)){
+    const ch=document.createElement("span"); ch.className="chip"; ch.textContent=w;
+    chips.appendChild(ch);
+  }
+  card.appendChild(chips);
+  return card;
+}
+
+function renderBucket(){
+  const v=$("#bucketview"); v.innerHTML="";
+  const ids=Object.keys(state.picks);
+  if(!ids.length){ v.appendChild(el("empty","Bucket is empty — pick assets from the Library tab.")); return; }
+  const latest=id=>Object.values(state.picks[id].pickers).sort().pop()||"";
+  const groups=[...state.data.categories.map(c=>c[0]), ""];
+  for(const g of groups){
+    const gids=ids.filter(id=>(state.picks[id].cat||"")===g)
+                  .sort((a,b)=>latest(b).localeCompare(latest(a)));
+    if(!gids.length) continue;
+    const h=el("bhead", g ? catLabel(g) : "Uncategorized"); h.id="bg-"+(g||"uncat");
+    const n=document.createElement("span"); n.className="n"; n.textContent=` · ${gids.length}`;
+    h.appendChild(n);
+    v.appendChild(h);
+    const grid=el("bgrid");
+    for(const id of gids) grid.appendChild(bucketItemCard(id, state.picks[id]));
+    v.appendChild(grid);
+  }
+}
+
+const hint=(k,l)=>{ const s=document.createElement("span"); s.className="hint";
+  const kb=document.createElement("kbd"); kb.textContent=k; s.appendChild(kb);
+  s.appendChild(document.createTextNode(l)); return s; };
+function foot(){
+  const f=$("#foot"); f.innerHTML="";
+  if(state.tab==="lib"){
+    f.appendChild(hint("+ Pick","one click → the “pick into” category"));
+    f.appendChild(hint("click thumb","zoom"));
+    f.appendChild(hint("←→","flip assets · click image closes"));
+    f.appendChild(hint("1-9 0 Q W E","category in zoom"));
+    if(state.staticCfg) f.appendChild(hint("Submit","opens a GitHub issue with your picks"));
+  } else {
+    f.appendChild(hint("click thumb","zoom + re-categorize"));
+    f.appendChild(hint("remove","take your pick back"));
+  }
+}
+
+function setTab(t){
+  state.tab=t;
+  $("#tabLib").classList.toggle("active",t==="lib");
+  $("#tabBucket").classList.toggle("active",t==="bucket");
+  $("#grid").style.display = t==="lib" ? "grid" : "none";
+  $("#sentinel").style.display = t==="lib" ? "block" : "none";
+  $("#bucketview").classList.toggle("show", t==="bucket");
+  if(t==="bucket") renderBucket();
+  renderSidebar(); foot();
+}
+$("#tabLib").onclick=()=>setTab("lib");
+$("#tabBucket").onclick=()=>setTab("bucket");
+$("#q").oninput=()=>applyFilter();
+$("#pagefilter").onchange=()=>applyFilter();
+$("#whochip").onclick=()=>{ $("#nameinput").value=state.who; $("#namemodal").classList.add("show");
+  $("#nameinput").focus(); };
+function saveName(){
+  const n=$("#nameinput").value.replace(/[^\w \-.]/g,"").trim().slice(0,40);
+  if(!n) return;
+  state.who=n; localStorage.setItem("picker_who",n);
+  $("#namemodal").classList.remove("show"); updateWho(); refreshPicks(true);
+}
+$("#namego").onclick=saveName;
+$("#nameinput").addEventListener("keydown",e=>{ if(e.key==="Enter") saveName(); });
+
+document.addEventListener("keydown",e=>{
+  if(e.metaKey||e.ctrlKey) return;
+  if(e.key==="Escape"){ closeLightbox(); return; }
+  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT") return;
+  if(!$("#lightbox").classList.contains("show")) return;
+  const k=e.key.toLowerCase();
+  if(k==="arrowright"){ navCard(1); return; }
+  if(k==="arrowleft"){ navCard(-1); return; }
+  if(k==="arrowdown"){ const c=state.cards[state.lb.ci]; e.preventDefault();
+    state.lb.idx=Math.min(state.lb.idx+1, c.members.length-1); renderLightbox(); return; }
+  if(k==="arrowup"){ e.preventDefault();
+    state.lb.idx=Math.max(state.lb.idx-1,0); renderLightbox(); return; }
+  if(k==="f"){ const m=lbCur(); if(m) window.open(figURL(m.id),"_blank","noopener"); return; }
+  const cat=(state.data.categories||[]).find(c=>c[0]===k);
+  if(cat) lbAssign(cat[0]);
+});
+
+boot();
+</script>
