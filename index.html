@@ -81,9 +81,15 @@
   .chip { background:#232529; border:1px solid var(--line); color:var(--acc);
           font-size:11px; padding:1px 8px; border-radius:9px; }
   #sentinel { height:1px; }
+  #upbar { display:none; gap:10px; align-items:center; padding:14px 16px 0; }
+  #upbar.show { display:flex; }
+  #upbar button { background:var(--panel); border:1px solid var(--acc); color:var(--txt);
+                  padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px; }
+  #upbar button:hover { color:var(--acc); }
+  #upbar .note { color:var(--dim); font-size:12px; }
+  #stage.dropping { outline:2px dashed var(--acc); outline-offset:-8px; }
   #bucketview { padding:16px; display:none; }
   #bucketview.show { display:block; }
-  #bucketview.dropping { outline:2px dashed var(--acc); outline-offset:-8px; }
   #bucketview .empty { color:var(--dim); padding:40px; text-align:center; }
   .bbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
   .bbar button { background:var(--panel); border:1px solid var(--line); color:var(--txt);
@@ -200,6 +206,13 @@
     <div id="pagelist"></div>
   </div>
   <div id="stage">
+    <div id="upbar">
+      <button id="upbtn">⬆ Upload images</button>
+      <span class="note">or drag &amp; drop images anywhere here — they join the shared
+        Custom library for everyone</span>
+      <input type="file" id="upfile" accept="image/png,image/jpeg,image/webp,image/gif"
+        multiple style="display:none">
+    </div>
     <div id="grid"></div>
     <div id="sentinel"></div>
     <div id="bucketview"></div>
@@ -247,7 +260,11 @@
       Figma files — switch libraries with the dropdown at the top of the
       left sidebar.
       Near-duplicates are stacked into one card (the ×N corner tag); the page
-      list below mirrors the Figma file's pages.</p>
+      list below mirrors the Figma file's pages. The <b>Custom</b> library is
+      the shared home for pieces that live outside Figma — <b>⬆ upload</b> or
+      drag &amp; drop screenshots, exports and references there (everyone
+      sees them; remove your own with ✕) and pick them like any other
+      asset.</p>
 
     <h3>Picking</h3>
     <p><b>Click the info strip</b> under any thumbnail to pick the asset
@@ -267,11 +284,10 @@
 
     <h3>The Vibe Bucket</h3>
     <p>The shared pool. Grouped by category, consensus first. Remove your own
-      picks any time; re-categorize in zoom. <b>⬆ Upload images</b> (or drag
-      &amp; drop) adds pieces that live outside the libraries — screenshots,
-      exports, references. When the pool is ready, <b>⬇ Download moodboard</b>
-      produces a single file with everything — images, names, credits, Figma
-      links — and <b>Copy Figma links</b> gives the plain-text list.</p>
+      picks any time; re-categorize in zoom. When the pool is ready,
+      <b>⬇ Download moodboard</b> produces a single file with everything —
+      images, names, credits, Figma links — and <b>Copy Figma links</b>
+      gives the plain-text list.</p>
 
     <h3>Good to know</h3>
     <p>Every card's <b>Figma ↗</b> jumps to the real asset in Figma (you need
@@ -290,7 +306,7 @@ const state = { fileset:[], fi:0, qualify:false,
                 who:localStorage.getItem("picker_who") || "", tab:"lib",
                 lb:{ci:-1, idx:0}, pageTotals:{}, idLoc:{},
                 staticCfg:null, localPicks:{}, apiBase:"", cursor:-1,
-                focus:"grid", sideCursor:0 };
+                focus:"grid", sideCursor:0, libJson:"" };
 /* apiBase: "" = same-origin live server; "<url>" = remote live bucket;
    null = no live backend — picks queue locally and ship via GitHub issue. */
 function queueMode(){ return state.staticCfg && state.apiBase===null; }
@@ -316,7 +332,8 @@ function qlookup(q){
   const fs=state.fileset.find(f=>f.key===key); if(!fs) return null;
   const loc=fs.idLoc[nid]; if(!loc) return null;
   const c=fs.cards[loc[0]], m=c.members[loc[1]]||{};
-  return {img:m.img||c.img, name:m.name||c.name, page:c.page, fs, ci:loc[0], mi:loc[1], nid};
+  return {img:m.img||c.img, src:m.src||c.src, name:m.name||c.name, page:c.page,
+          fs, ci:loc[0], mi:loc[1], nid};
 }
 function imgSrc(fs, file){ return (fs.dir==="." ? "" : fs.dir+"/") + "renders/" + file; }
 function figURL(nodeId, fileKey){
@@ -326,6 +343,22 @@ function figA(nodeId, fileKey){ const a=document.createElement("a"); a.className
   a.title="Open this asset in Figma"; a.textContent="Figma ↗";
   a.onclick=e=>e.stopPropagation(); return a; }
 function hideOnErr(im){ im.onerror=()=>{ im.style.display="none"; }; return im; }
+
+function customFS(){ return state.fileset.find(f=>f.custom); }
+/* The shared Custom library (Worker-backed uploads) rendered as a pseudo-file:
+   one single-member cluster per upload, images served from the Worker. */
+function mkCustomFile(lib){
+  const cats=state.fileset[0].data.categories;
+  const clusters=Object.entries(lib)
+    .sort((a,b)=>String(b[1].ts||"").localeCompare(String(a[1].ts||"")))
+    .map(([id,m])=>({id, page:"Uploads", name:m.name||"upload", type:"UPLOAD",
+      img:null, src:state.apiBase+"/upload/"+id, who:m.who||"",
+      members:[{id, img:null, src:state.apiBase+"/upload/"+id, name:m.name||"upload"}]}));
+  const f=mkFile("custom","Custom",null,
+    {meta:{file_key:"custom", name:"Custom"}, categories:cats, clusters});
+  f.custom=true;
+  return f;
+}
 
 function mkFile(key, label, dir, data){
   const entry={key, label, dir, data, cards:data.clusters, pageTotals:{}, idLoc:{}};
@@ -378,6 +411,26 @@ async function boot(){
     const d=await (await fetch("data.json")).json();
     state.fileset=[mkFile(d.meta.file_key, d.meta.name, ".", d)];
   }
+  if(state.staticCfg){
+    state.apiBase=null;
+    const bu=(state.staticCfg.bucket_url||"").replace(/\/+$/,"");
+    if(bu){
+      try{ const pr=await fetch(bu+"/picks",{signal:AbortSignal.timeout(5000)});
+           if(pr.ok) state.apiBase=bu; }catch(e){}
+    }
+    if(state.apiBase){
+      /* live backend: the shared Custom library joins as a pseudo-file */
+      try{ const lr=await fetch(state.apiBase+"/library",{cache:"no-store"});
+           if(lr.ok){ const lib=await lr.json(); state.libJson=JSON.stringify(lib);
+             state.fileset.push(mkCustomFile(lib)); } }catch(e){}
+    } else {
+      try{ state.localPicks=JSON.parse(localStorage.getItem("picker_local")||"{}"); }
+      catch(e){ state.localPicks={}; }
+      const sb=document.createElement("button"); sb.className="tab"; sb.id="submitbtn";
+      sb.textContent="Submit picks (0)"; sb.onclick=submitPicks;
+      document.querySelector(".tabs").appendChild(sb);
+    }
+  }
   const savedFile=localStorage.getItem("picker_file");
   const sf=state.fileset.findIndex(f=>f.key===savedFile);
   state.fi=sf>=0?sf:0;
@@ -409,21 +462,6 @@ async function boot(){
     c.onclick=()=>lbAssign(k);
     return c;
   });
-  if(state.staticCfg){
-    state.apiBase=null;
-    const bu=(state.staticCfg.bucket_url||"").replace(/\/+$/,"");
-    if(bu){
-      try{ const pr=await fetch(bu+"/picks",{signal:AbortSignal.timeout(5000)});
-           if(pr.ok) state.apiBase=bu; }catch(e){}
-    }
-    if(state.apiBase===null){
-      try{ state.localPicks=JSON.parse(localStorage.getItem("picker_local")||"{}"); }
-      catch(e){ state.localPicks={}; }
-      const sb=document.createElement("button"); sb.className="tab"; sb.id="submitbtn";
-      sb.textContent="Submit picks (0)"; sb.onclick=submitPicks;
-      document.querySelector(".tabs").appendChild(sb);
-    }
-  }
   await refreshPicks(true);
   refreshFileUI();
   applyFilter();
@@ -489,15 +527,19 @@ async function refreshPicks(force){
       const n=Object.keys(state.localPicks).length;
       const sb=$("#submitbtn"); if(sb){ sb.textContent=`Submit picks (${n})`; sb.disabled=!n; }
     } else {
+      /* refresh the shared Custom library alongside picks */
+      try{ const lr=await fetch(state.apiBase+"/library",{cache:"no-store"});
+        if(lr.ok){ const lib=await lr.json(); const lj=JSON.stringify(lib);
+          if(lj!==state.libJson){ state.libJson=lj;
+            const idx=state.fileset.findIndex(f=>f.custom);
+            if(idx>=0){ state.fileset[idx]=mkCustomFile(lib);
+              if(idx===state.fi){ bindActiveFile(); refreshFileUI(); applyFilter(); } } } }
+      }catch(e){}
       p = await (await fetch(state.apiBase+"/picks")).json();
-      for(const id of Object.keys(p)){          // enrich from data.json; the
-        if(p[id].upload){                       // Worker stores only cat+pickers
-          p[id]={...p[id], img:null, name:p[id].upload.name, page:"Uploaded"};
-          continue;
-        }
-        const ql=qlookup(id);
-        if(ql) p[id]={...p[id], img:ql.img, name:ql.name, page:ql.page};
-        else delete p[id];
+      for(const id of Object.keys(p)){          // enrich from data.json / the
+        const ql=qlookup(id);                   // library; the Worker stores
+        if(ql) p[id]={...p[id], img:ql.img, src:ql.src, name:ql.name, page:ql.page};
+        else delete p[id];                      // only cat+pickers
       }
     }
     const j = JSON.stringify(p)+"|"+state.who;
@@ -630,10 +672,22 @@ function renderMore(){
   for(let k=state.shown; k<end; k++){
     const ci = state.filtered[k], c = state.cards[ci];
     const {card, meta} = baseCard(c.id, F(),
-      {img:c.img, name:c.name, page:c.page, noimg:"no render — "+c.name},
+      {img:c.img, src:c.src, name:c.name,
+       page:F().custom ? (c.who ? "by "+c.who : c.page) : c.page,
+       noFig:F().custom, noimg:"no render — "+c.name},
       ()=>openLightbox(ci,0));                                  // thumbnail zooms
     card.dataset.ci=ci;
     card.onclick=()=>{ setCursor(k); togglePick(qid(c.id)); };  // info strip picks
+    if(F().custom && c.who && c.who===state.who){
+      const rm=document.createElement("button"); rm.className="rmbtn"; rm.textContent="✕";
+      rm.title="Remove this upload from the Custom library";
+      rm.onclick=async e=>{ e.stopPropagation();
+        if(!confirm(`Remove "${c.name}" from the shared Custom library?`)) return;
+        await fetch(state.apiBase+"/library-remove",{method:"POST",
+          headers:{"Content-Type":"application/json"}, body:JSON.stringify({id:c.id})});
+        toast("Upload removed"); await refreshPicks(true); };
+      meta.appendChild(rm);
+    }
     if(state.picks[qid(c.id)] || c.members.some(m=>state.picks[qid(m.id)])) card.classList.add("picked");
     if(c.members.length>1){ const mc=document.createElement("span"); mc.className="mcount";
       mc.textContent="×"+c.members.length; card.appendChild(mc); }
@@ -746,7 +800,8 @@ function renderLightbox(){
   esc($("#lbname"), `${m.name || c.name} — ${c.page}`);
   const it=state.picks[qid(m.id)];
   esc($("#lbcat"), it && it.cat ? catLabel(it.cat) : "");
-  $("#lbfigbig").href=figURL(m.id);
+  $("#lbfigbig").style.display=F().custom?"none":"";
+  if(!F().custom) $("#lbfigbig").href=figURL(m.id);
   document.querySelectorAll("#lbcats .cchip").forEach(ch=>
     ch.classList.toggle("cur", !!(it && it.cat===ch.dataset.k)));
   const pb=$("#lbpick");
@@ -755,7 +810,8 @@ function renderLightbox(){
   pb.classList.toggle("on", !!it);
   pb.onclick=()=>togglePick(qid(m.id));
   const box=$("#lbimg"); box.innerHTML="";
-  if(m.img){ const im=document.createElement("img"); im.src=imgSrc(F(), m.img);
+  if(m.src || m.img){ const im=document.createElement("img");
+    im.src=m.src || imgSrc(F(), m.img);
     box.appendChild(hideOnErr(im)); }
   else box.appendChild(el("noimg","no render for this asset"));
   const strip=$("#lbstrip"); strip.innerHTML="";
@@ -764,8 +820,8 @@ function renderLightbox(){
     if(i===state.lb.idx) d.classList.add("cur");
     if(state.picks[qid(mm.id)]){ d.classList.add("picked");
       const t=document.createElement("span"); t.className="tick"; t.textContent="✓"; d.appendChild(t); }
-    if(mm.img){ const im=document.createElement("img"); im.loading="lazy";
-      im.src=imgSrc(F(), mm.img); d.appendChild(hideOnErr(im)); }
+    if(mm.src || mm.img){ const im=document.createElement("img"); im.loading="lazy";
+      im.src=mm.src || imgSrc(F(), mm.img); d.appendChild(hideOnErr(im)); }
     d.onclick=()=>{ state.lb.idx=i; renderLightbox(); };
     strip.appendChild(d);
   });
@@ -777,16 +833,11 @@ $("#lbprev").onclick=e=>{ e.stopPropagation(); navCard(-1); };
 $("#lbnext").onclick=e=>{ e.stopPropagation(); navCard(1); };
 
 function bucketItemCard(id, it){
-  let card, meta;
-  if(it.upload){
-    ({card, meta} = baseCard(id, null,
-      {src:state.apiBase+"/upload/"+id, name:it.name, page:it.page, noFig:true}, null));
-  } else {
-    const ql=qlookup(id);
-    const fs=ql?ql.fs:F(), nid=ql?ql.nid:id;
-    ({card, meta} = baseCard(nid, fs, {img:it.img, name:it.name, page:it.page},
-      ()=>openLightboxById(id)));
-  }
+  const ql=qlookup(id);
+  const fs=ql?ql.fs:F(), nid=ql?ql.nid:id;
+  const {card, meta} = baseCard(nid, fs,
+    {img:it.img, src:it.src, name:it.name, page:it.page, noFig:!!(ql&&ql.fs.custom)},
+    ()=>openLightboxById(id));
   card.classList.add("picked");
   const n=Object.keys(it.pickers).length;
   if(n>1){ const cb=document.createElement("span"); cb.className="cntbadge";
@@ -804,18 +855,9 @@ function bucketItemCard(id, it){
   return card;
 }
 
-function canUpload(){ return !!state.apiBase; }   // uploads need the live Worker
 function renderBucket(){
   const v=$("#bucketview"); v.innerHTML="";
   const bar=el("bbar");
-  if(canUpload()){
-    const up=document.createElement("button"); up.textContent="⬆ Upload images";
-    up.onclick=()=>$("#upfile").click(); bar.appendChild(up);
-    const fi=document.createElement("input"); fi.type="file"; fi.id="upfile";
-    fi.accept="image/png,image/jpeg,image/webp,image/gif"; fi.multiple=true;
-    fi.style.display="none"; fi.onchange=()=>{ uploadFiles(fi.files); fi.value=""; };
-    bar.appendChild(fi);
-  }
   const ids=Object.keys(state.picks);
   if(ids.length){
     const cp=document.createElement("button"); cp.textContent="Copy Figma links";
@@ -823,9 +865,8 @@ function renderBucket(){
     const dl=document.createElement("button"); dl.textContent="⬇ Download moodboard";
     dl.onclick=downloadMoodboard; bar.appendChild(dl);
   }
-  if(canUpload()) bar.appendChild(el("note","drop images anywhere here to add them"));
   v.appendChild(bar);
-  if(!ids.length){ v.appendChild(el("empty","Vibe bucket is empty — pick from the libraries or upload images.")); return; }
+  if(!ids.length){ v.appendChild(el("empty","Vibe bucket is empty — pick from the libraries.")); return; }
   const latest=id=>Object.values(state.picks[id].pickers).sort().pop()||"";
   const votes=id=>Object.keys(state.picks[id].pickers).length;
   const groups=[...state.data.categories.map(c=>c[0]), ""];
@@ -843,8 +884,9 @@ function renderBucket(){
   }
 }
 
+/* Uploads land in the shared Custom library (needs the live Worker). */
 async function uploadFiles(files){
-  if(!canUpload()) return;
+  if(!customFS()) return;
   if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); return; }
   for(const f of files){
     if(!/^image\/(png|jpeg|webp|gif)$/.test(f.type)){ toast(`${f.name}: not an image`); continue; }
@@ -854,16 +896,19 @@ async function uploadFiles(files){
     const resp=await fetch(state.apiBase+"/upload",{method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({who:state.who, name:f.name.replace(/\.[^.]+$/,""),
-                           type:f.type, cat:activeCat(), data})});
+                           type:f.type, data})});
     toast(resp.ok ? `Uploaded ${f.name}` : `Upload failed: ${f.name}`);
   }
-  await refreshPicks(true);
+  await refreshPicks(true);   // the poll's library refresh renders them
 }
-const bv=$("#bucketview");
-bv.addEventListener("dragover",e=>{ if(canUpload()&&state.tab==="bucket"){ e.preventDefault(); bv.classList.add("dropping"); } });
-bv.addEventListener("dragleave",()=>bv.classList.remove("dropping"));
-bv.addEventListener("drop",e=>{ if(!canUpload()||state.tab!=="bucket") return;
-  e.preventDefault(); bv.classList.remove("dropping");
+$("#upbtn").onclick=()=>$("#upfile").click();
+$("#upfile").onchange=()=>{ uploadFiles($("#upfile").files); $("#upfile").value=""; };
+const stage=$("#stage");
+stage.addEventListener("dragover",e=>{ if(state.tab==="lib"&&F()&&F().custom){
+  e.preventDefault(); stage.classList.add("dropping"); } });
+stage.addEventListener("dragleave",()=>stage.classList.remove("dropping"));
+stage.addEventListener("drop",e=>{ if(state.tab!=="lib"||!F()||!F().custom) return;
+  e.preventDefault(); stage.classList.remove("dropping");
   if(e.dataTransfer && e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files); });
 
 function copyFigmaLinks(){
@@ -875,8 +920,8 @@ function copyFigmaLinks(){
     lines.push(`## ${g?catLabel(g):"Uncategorized"}`);
     for(const id of gids){
       const it=state.picks[id];
-      if(it.upload){ lines.push(`${it.name} — (uploaded image)`); continue; }
       const {key,nid}=parseQid(id);
+      if(key==="custom"){ lines.push(`${it.name} — (uploaded image)`); continue; }
       lines.push(`${it.name} — ${figURL(nid, key)}`);
     }
     lines.push("");
@@ -904,11 +949,10 @@ async function downloadMoodboard(){
     cards+=`<h2>${eschtml(g?catLabel(g):"Uncategorized")} · ${gids.length}</h2><div class="grid">`;
     for(const id of gids){
       const it=state.picks[id];
-      const src=it.upload ? await toDataURL(state.apiBase+"/upload/"+id)
-        : await toDataURL((()=>{ const ql=qlookup(id);
-            return ql&&ql.img ? imgSrc(ql.fs, ql.img) : null; })());
+      const ql=qlookup(id);
+      const src=await toDataURL(ql ? (ql.src || (ql.img ? imgSrc(ql.fs, ql.img) : null)) : null);
       const {key,nid}=parseQid(id);
-      const link=it.upload?"":`<a href="${figURL(nid,key)}">Figma ↗</a>`;
+      const link=key==="custom"?"":`<a href="${figURL(nid,key)}">Figma ↗</a>`;
       cards+=`<figure>${src?`<img src="${src}">`:"<div class=noimg>no image</div>"}
         <figcaption><b>${eschtml(it.name)}</b> · ${eschtml(it.page)}
         · ${eschtml(Object.keys(it.pickers).join(", "))} ${link}</figcaption></figure>`;
@@ -935,6 +979,7 @@ const hint=(k,l)=>{ const s=document.createElement("span"); s.className="hint";
   const kb=document.createElement("kbd"); kb.textContent=k; s.appendChild(kb);
   s.appendChild(document.createTextNode(l)); return s; };
 function foot(){
+  $("#upbar").classList.toggle("show", state.tab==="lib" && !!(F()&&F().custom));
   const f=$("#foot"); f.innerHTML="";
   if(state.tab==="lib"){
     f.appendChild(hint("←→↑↓","move through the grid · ← at the left edge = page list"));
@@ -945,7 +990,6 @@ function foot(){
   } else {
     f.appendChild(hint("click thumb","zoom + re-categorize"));
     f.appendChild(hint("remove","take your pick back"));
-    if(canUpload()) f.appendChild(hint("drop / ⬆","add outside images to the vibe bucket"));
     f.appendChild(hint("⬇","moodboard = everything, self-contained"));
   }
 }
@@ -1000,7 +1044,7 @@ document.addEventListener("keydown",e=>{
       state.lb.idx=Math.min(state.lb.idx+1, c.members.length-1); renderLightbox(); return; }
     if(k==="arrowup"){ e.preventDefault();
       state.lb.idx=Math.max(state.lb.idx-1,0); renderLightbox(); return; }
-    if(k==="f"){ const m=lbCur(); if(m) window.open(figURL(m.id),"_blank","noopener"); return; }
+    if(k==="f"){ const m=lbCur(); if(m && !F().custom) window.open(figURL(m.id),"_blank","noopener"); return; }
     const cat=(state.data.categories||[]).find(c=>c[0]===k);
     if(cat) lbAssign(cat[0]);
     return;
