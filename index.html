@@ -277,8 +277,8 @@
       number keys <kbd>1-9 0 Q W E</kbd> pick straight into a category,
       clicking the image closes. In the grid, arrows move in all four
       directions; <kbd>←</kbd> on the leftmost column jumps to the page list
-      (<kbd>↑</kbd><kbd>↓</kbd> choose a page, <kbd>→</kbd> dives into its
-      grid). <kbd>Space</kbd> picks the highlighted card and <b>hide
+      (<kbd>↑</kbd><kbd>↓</kbd> flip through pages — the grid follows live —
+      and <kbd>→</kbd> dives in). <kbd>Space</kbd> picks the highlighted card and <b>hide
       picked</b> keeps your sweep clean.</p>
 
     <h3>The Vibe Bucket</h3>
@@ -647,6 +647,11 @@ function enterSide(){
 function moveSide(dir){
   const rows=sideRows(); if(!rows.length) return;
   state.sideCursor=Math.min(Math.max(state.sideCursor+dir,0),rows.length-1);
+  const r=rows[state.sideCursor];        // the gallery follows the highlight live
+  if(r && $("#pagefilter").value!==r.dataset.page){
+    $("#pagefilter").value=r.dataset.page;
+    applyFilter();                       // re-renders grid + sidebar (keeps .kb)
+  }
   updateSideUI(true);
 }
 function updateSideUI(scroll){
@@ -658,7 +663,8 @@ function updateSideUI(scroll){
 function sideEnterGrid(){
   const r=sideRows()[state.sideCursor];
   state.focus="grid";
-  if(r) selectPage(r.dataset.page);      // applyFilter re-renders grid+sidebar
+  if(r && $("#pagefilter").value!==r.dataset.page)
+    selectPage(r.dataset.page);          // usually a no-op: moveSide applied it live
   setCursor(0);
 }
 
@@ -990,7 +996,7 @@ function foot(){
   const f=$("#foot"); f.innerHTML="";
   if(state.tab==="lib"){
     f.appendChild(hint("←→↑↓","move through the grid · ← at the left edge = page list"));
-    f.appendChild(hint("↑↓ →","page list: choose a page · → into its grid"));
+    f.appendChild(hint("↑↓ →","page list: pages apply live · → into the grid"));
     f.appendChild(hint("click info / Space","pick · unpick — 1-9 0 Q W E with category"));
     f.appendChild(hint("click image / Enter","zoom · click image closes"));
     if(queueMode()) f.appendChild(hint("Submit","opens a GitHub issue with your picks"));
