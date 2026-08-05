@@ -15,12 +15,12 @@
   header .sub { color:var(--dim); font-size:12px; margin-right:auto; }
   .tabs { display:flex; gap:6px; }
   #fileswitch { display:flex; flex-direction:column; gap:4px; padding:2px 2px 0; }
-  #fileswitch .tab { text-align:left; width:100%; }
+  #fileswitch select { width:100%; background:var(--panel); border:1px solid var(--acc);
+    color:var(--txt); padding:6px 10px; border-radius:8px; font-size:13px; outline:none; }
   .tab { background:var(--panel); border:1px solid var(--line); color:var(--txt);
          padding:6px 14px; border-radius:8px; cursor:pointer; font-size:13px; }
   .tab.active { border-color:var(--pick); color:var(--pick); }
   .tab:disabled { opacity:.4; cursor:default; }
-  #fileswitch .tab.active { border-color:var(--acc); color:var(--acc); }
   .tab .badge { background:var(--pick); color:#0b120d; border-radius:10px;
                 padding:0 7px; margin-left:6px; font-weight:700; font-size:12px; }
   input[type=search], header select {
@@ -57,11 +57,6 @@
   .card.cur { outline:2px solid var(--acc); outline-offset:2px; }
   .thumbwrap { aspect-ratio:4/3; background:#0c0d0e; cursor:zoom-in;
                display:flex; align-items:center; justify-content:center; overflow:hidden; }
-  #grid .thumbwrap { cursor:pointer; }
-  .zoombtn { position:absolute; top:8px; right:8px; background:rgba(0,0,0,.65);
-             border:none; color:#fff; font-size:13px; padding:2px 8px; border-radius:9px;
-             cursor:zoom-in; line-height:1.5; }
-  .zoombtn:hover { background:var(--acc); color:#0b120d; }
   .thumbwrap img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
   .noimg { color:var(--dim); font-size:11px; padding:8px; text-align:center; }
   .cmeta { padding:8px 10px; display:flex; gap:8px; align-items:center; }
@@ -75,7 +70,8 @@
   .figlink { color:var(--acc); text-decoration:none; font-size:12px; white-space:nowrap; }
   .figlink:hover { color:var(--lime); text-decoration:underline; }
   .mcount { position:absolute; top:8px; left:8px; background:rgba(0,0,0,.65);
-            color:#fff; font-size:11px; padding:2px 7px; border-radius:9px; }
+            color:#fff; font-size:11px; padding:2px 7px; border-radius:9px;
+            pointer-events:none; }
   .pickbtn { border:1px solid var(--line); background:#232529; color:var(--txt);
              border-radius:7px; padding:3px 10px; cursor:pointer; font-size:12px;
              white-space:nowrap; }
@@ -248,17 +244,19 @@
 
     <h3>What you're looking at</h3>
     <p>Every visual from the <b>Social Media &amp; Ads</b> and <b>Marketing</b>
-      Figma files — switch libraries at the top of the left sidebar.
+      Figma files — switch libraries with the dropdown at the top of the
+      left sidebar.
       Near-duplicates are stacked into one card (the ×N corner tag); the page
       list below mirrors the Figma file's pages.</p>
 
     <h3>Picking</h3>
-    <p><b>Click any card</b> to pick it into the shared bucket — click again
-      to unpick; everyone sees it within seconds, tagged with your name. The
-      <b>"pick into"</b> dropdown sets the category your picks land in
-      (optional). Pick the same thing as a teammate and it gets a <b>×2</b>
-      consensus badge and floats up. The <b>⛶</b> corner button (or
-      <kbd>Enter</kbd>) zooms: arrow keys flip through assets
+    <p><b>Click the info strip</b> under any thumbnail to pick the asset
+      into the shared bucket — click again to unpick; everyone sees it
+      within seconds, tagged with your name. The <b>"pick into"</b> dropdown
+      sets the category your picks land in (optional). Pick the same thing
+      as a teammate and it gets a <b>×2</b> consensus badge and floats up.
+      Click the thumbnail (or press <kbd>Enter</kbd>) to zoom: arrow keys
+      flip through assets
       (<kbd>←</kbd><kbd>→</kbd>) and near-dupes (<kbd>↑</kbd><kbd>↓</kbd>),
       number keys <kbd>1-9 0 Q W E</kbd> pick straight into a category,
       clicking the image closes. In the grid, arrows move in all four
@@ -347,7 +345,7 @@ function baseCard(nodeId, fs, info, onZoom){
   if(info.src || info.img){ const im=document.createElement("img"); im.loading="lazy";
     im.src=info.src || imgSrc(fs, info.img); tw.appendChild(hideOnErr(im)); }
   else tw.appendChild(el("noimg", info.noimg||"no render"));
-  if(onZoom) tw.onclick=onZoom;
+  if(onZoom) tw.onclick=e=>{ e.stopPropagation(); onZoom(); };
   card.appendChild(tw);
   const meta=el("cmeta");
   meta.appendChild(el("cname", info.name));
@@ -387,13 +385,15 @@ async function boot(){
   if(state.fileset.length>1){
     const sw=$("#fileswitch");
     sw.appendChild(el("sechead","Library"));
+    const fsel=document.createElement("select"); fsel.id="fileselect";
     const ff=$("#filefilter");
     state.fileset.forEach((f,i)=>{
-      const b=document.createElement("button"); b.className="tab"; b.dataset.fi=i;
-      esc(b,f.label); b.onclick=()=>setFile(i); sw.appendChild(b);
-      const o=document.createElement("option"); o.value=i; esc(o,f.label); ff.appendChild(o);
+      for(const sel of [fsel,ff]){
+        const o=document.createElement("option"); o.value=i; esc(o,f.label); sel.appendChild(o); }
     });
+    fsel.onchange=()=>setFile(Number(fsel.value));
     ff.onchange=()=>setFile(Number(ff.value));
+    sw.appendChild(fsel);
   }
   for(const [k,label] of state.data.categories){
     const o=document.createElement("option"); o.value=k; esc(o,label);
@@ -440,9 +440,10 @@ function refreshFileUI(){
   const f=F();
   const assets=f.cards.reduce((n,c)=>n+c.members.length,0);
   $("#sub").textContent=`${f.label} — ${f.cards.length.toLocaleString()} groups · ${assets.toLocaleString()} assets`;
-  document.querySelectorAll("#fileswitch .tab").forEach(b=>
-    b.classList.toggle("active", Number(b.dataset.fi)===state.fi));
-  if(state.fileset.length>1) $("#filefilter").value=String(state.fi);
+  if(state.fileset.length>1){
+    $("#fileselect").value=String(state.fi);
+    $("#filefilter").value=String(state.fi);
+  }
   const pf=$("#pagefilter");
   pf.innerHTML=""; const o0=document.createElement("option"); o0.value="";
   o0.textContent="All pages"; pf.appendChild(o0);
@@ -629,12 +630,10 @@ function renderMore(){
   for(let k=state.shown; k<end; k++){
     const ci = state.filtered[k], c = state.cards[ci];
     const {card, meta} = baseCard(c.id, F(),
-      {img:c.img, name:c.name, page:c.page, noimg:"no render — "+c.name}, null);
+      {img:c.img, name:c.name, page:c.page, noimg:"no render — "+c.name},
+      ()=>openLightbox(ci,0));                                  // thumbnail zooms
     card.dataset.ci=ci;
-    card.onclick=()=>{ setCursor(k); togglePick(qid(c.id)); };  // whole card picks
-    const zb=document.createElement("button"); zb.className="zoombtn"; zb.textContent="⛶";
-    zb.title="Zoom (Enter)"; zb.onclick=e=>{ e.stopPropagation(); openLightbox(ci,0); };
-    card.appendChild(zb);
+    card.onclick=()=>{ setCursor(k); togglePick(qid(c.id)); };  // info strip picks
     if(state.picks[qid(c.id)] || c.members.some(m=>state.picks[qid(m.id)])) card.classList.add("picked");
     if(c.members.length>1){ const mc=document.createElement("span"); mc.className="mcount";
       mc.textContent="×"+c.members.length; card.appendChild(mc); }
@@ -940,8 +939,8 @@ function foot(){
   if(state.tab==="lib"){
     f.appendChild(hint("←→↑↓","move through the grid · ← at the left edge = page list"));
     f.appendChild(hint("↑↓ →","page list: choose a page · → into its grid"));
-    f.appendChild(hint("click / Space","pick · unpick — 1-9 0 Q W E with category"));
-    f.appendChild(hint("⛶ / Enter","zoom · click image closes"));
+    f.appendChild(hint("click info / Space","pick · unpick — 1-9 0 Q W E with category"));
+    f.appendChild(hint("click image / Enter","zoom · click image closes"));
     if(queueMode()) f.appendChild(hint("Submit","opens a GitHub issue with your picks"));
   } else {
     f.appendChild(hint("click thumb","zoom + re-categorize"));
