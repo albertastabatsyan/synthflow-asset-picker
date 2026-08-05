@@ -95,7 +95,6 @@
   .bbar button { background:var(--panel); border:1px solid var(--line); color:var(--txt);
                  padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px; }
   .bbar button:hover { border-color:var(--acc); }
-  .bbar .note { color:var(--dim); font-size:12px; }
   .upbadge { color:var(--acc); font-size:11px; white-space:nowrap; }
   .cntbadge { background:var(--pick); color:#0b120d; font-size:11px; font-weight:700;
               border-radius:9px; padding:1px 7px; flex:none; }
@@ -304,7 +303,7 @@ const $ = s => document.querySelector(s);
 const state = { fileset:[], fi:0, qualify:false,
                 data:null, cards:[], filtered:[], shown:0, picks:{}, picksJson:"",
                 who:localStorage.getItem("picker_who") || "", tab:"lib",
-                lb:{ci:-1, idx:0}, pageTotals:{}, idLoc:{},
+                lb:{ci:-1, idx:0}, pageTotals:{},
                 staticCfg:null, localPicks:{}, apiBase:"", cursor:-1,
                 focus:"grid", sideCursor:0, libJson:"" };
 /* apiBase: "" = same-origin live server; "<url>" = remote live bucket;
@@ -351,7 +350,7 @@ function mkCustomFile(lib){
   const cats=state.fileset[0].data.categories;
   const clusters=Object.entries(lib)
     .sort((a,b)=>String(b[1].ts||"").localeCompare(String(a[1].ts||"")))
-    .map(([id,m])=>({id, page:"Uploads", name:m.name||"upload", type:"UPLOAD",
+    .map(([id,m])=>({id, page:"Uploads", name:m.name||"upload",
       img:null, src:state.apiBase+"/upload/"+id, who:m.who||"",
       members:[{id, img:null, src:state.apiBase+"/upload/"+id, name:m.name||"upload"}]}));
   const f=mkFile("custom","Custom",null,
@@ -385,16 +384,12 @@ function baseCard(nodeId, fs, info, onZoom){
   card.appendChild(meta);
   const pg=el("cpage");
   const pgtext=(state.fileset.length>1 && fs && fs!==F()) ? `${fs.label} · ${info.page}` : info.page;
-  pg.appendChild(Object.assign(el("pg", pgtext),{className:"pg"}));
+  pg.appendChild(el("pg", pgtext));
   if(info.noFig){ const b=document.createElement("span"); b.className="upbadge";
     b.textContent="uploaded"; pg.appendChild(b); }
   else pg.appendChild(figA(nodeId, fs.key));
   card.appendChild(pg);
   return {card, meta};
-}
-
-function catList(container, make){
-  for(const [k,label] of state.data.categories) container.appendChild(make(k,label));
 }
 
 async function boot(){
@@ -455,13 +450,13 @@ async function boot(){
   const savedCat=localStorage.getItem("picker_cat")||"";
   if(state.data.categories.some(c=>c[0]===savedCat)) $("#pickcat").value=savedCat;
   $("#pickcat").onchange=()=>localStorage.setItem("picker_cat", $("#pickcat").value);
-  catList($("#lbcats"), (k,label)=>{
+  for(const [k,label] of state.data.categories){
     const c=document.createElement("span"); c.className="cchip"; c.dataset.k=k; c.title=label;
     const kb=document.createElement("kbd"); kb.textContent=k.toUpperCase(); c.appendChild(kb);
     c.appendChild(document.createTextNode(label.slice(5)));
     c.onclick=()=>lbAssign(k);
-    return c;
-  });
+    $("#lbcats").appendChild(c);
+  }
   await refreshPicks(true);
   refreshFileUI();
   applyFilter();
@@ -472,7 +467,7 @@ async function boot(){
 
 function bindActiveFile(){
   const f=F();
-  state.data=f.data; state.cards=f.cards; state.pageTotals=f.pageTotals; state.idLoc=f.idLoc;
+  state.data=f.data; state.cards=f.cards; state.pageTotals=f.pageTotals;
 }
 function refreshFileUI(){
   const f=F();
@@ -572,8 +567,8 @@ function renderSidebar(){
   const row=(name,n,total,cur,page)=>{
     const r=el("prow"+(cur?" cur":""));
     const dot=el("dot"); if(n) dot.classList.add("on"); r.appendChild(dot);
-    r.appendChild(Object.assign(el("nm",name),{className:"nm"}));
-    const ct=el("ct"); ct.className="ct";
+    r.appendChild(el("nm",name));
+    const ct=el("ct");
     if(n){ const b=document.createElement("b"); b.textContent=n; ct.appendChild(b);
       ct.appendChild(document.createTextNode("/"+total)); }
     else ct.textContent=String(total);
@@ -816,7 +811,7 @@ function renderLightbox(){
   else box.appendChild(el("noimg","no render for this asset"));
   const strip=$("#lbstrip"); strip.innerHTML="";
   c.members.forEach((mm,i)=>{
-    const d=el("m"); d.className="m";
+    const d=el("m");
     if(i===state.lb.idx) d.classList.add("cur");
     if(state.picks[qid(mm.id)]){ d.classList.add("picked");
       const t=document.createElement("span"); t.className="tick"; t.textContent="✓"; d.appendChild(t); }
