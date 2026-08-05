@@ -283,7 +283,8 @@
 
     <h3>The Vibe Bucket</h3>
     <p>The shared pool. Grouped by category, consensus first. Remove your own
-      picks any time; re-categorize in zoom. When the pool is ready,
+      picks any time; <b>✕ all</b> clears an item for everyone (it asks
+      first); re-categorize in zoom. When the pool is ready,
       <b>⬇ Download moodboard</b> produces a single file with everything —
       images, names, credits, Figma links — and <b>Copy Figma links</b>
       gives the plain-text list.</p>
@@ -738,6 +739,7 @@ async function doPick(id, action, cat){
     headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
   if(r.status===204){
     toast(action==="remove" ? "Removed your pick" :
+          action==="clear"  ? "Removed for everyone" :
           action==="recat"  ? "→ "+(catLabel(cat)||"no category") :
           cat ? "Added → "+catLabel(cat) : "Added to bucket");
     await refreshPicks();
@@ -840,6 +842,16 @@ function bucketItemCard(id, it){
   if(it.pickers[state.who]){
     const rm=document.createElement("button"); rm.className="rmbtn"; rm.textContent="remove";
     rm.onclick=()=>doPick(id,"remove"); meta.appendChild(rm);
+  }
+  /* Names are free-typed, so picks under another name (or a name variant)
+     would otherwise be stuck forever — anyone may clear an entry outright. */
+  if(!queueMode() && Object.keys(it.pickers).some(w=>w!==state.who)){
+    const all=Object.keys(it.pickers).join(", ");
+    const ca=document.createElement("button"); ca.className="rmbtn"; ca.textContent="✕ all";
+    ca.title="Remove this from the bucket for everyone (picked by "+all+")";
+    ca.onclick=()=>{ if(confirm(`Remove "${it.name}" from the bucket for everyone?\nPicked by: ${all}.`))
+      doPick(id,"clear"); };
+    meta.appendChild(ca);
   }
   const chips=el("pickers");
   for(const w of Object.keys(it.pickers)){
@@ -984,7 +996,7 @@ function foot(){
     if(queueMode()) f.appendChild(hint("Submit","opens a GitHub issue with your picks"));
   } else {
     f.appendChild(hint("click thumb","zoom + re-categorize"));
-    f.appendChild(hint("remove","take your pick back"));
+    f.appendChild(hint("remove / ✕ all","take your pick back · clear for everyone"));
     f.appendChild(hint("⬇","moodboard = everything, self-contained"));
   }
 }
