@@ -859,19 +859,24 @@ async function downloadAsset(id, it){
   const base=(it.name||"asset").replace(/[^\w \-.]+/g,"").trim().slice(0,60)||"asset";
   let blob=null, ext="png", note="";
   try{
-    if(key==="custom" && state.apiBase){
+    if(key==="custom" && state.apiBase){   // uploads: the original bytes
       const r=await fetch(state.apiBase+"/upload/"+nid);
       if(r.ok){ blob=await r.blob();
         ext=(blob.type.split("/")[1]||"png").replace("jpeg","jpg"); }
     } else if(key!=="custom" && state.apiBase){
       for(const scale of [4,3,2,1]){
-        const r=await fetch(`${state.apiBase}/export?key=${key}&node=${encodeURIComponent(nid)}&scale=${scale}`);
+        let r=null;
+        try{ r=await fetch(
+          `${state.apiBase}/export?key=${key}&node=${encodeURIComponent(nid)}&scale=${scale}`,
+          {signal:AbortSignal.timeout(25000)}); }
+        catch(e){ continue; }             // slow render — try a smaller scale
         if(r.ok){
           blob=await r.blob();
           const actual=r.headers.get("X-Figma-Export-Scale")||String(scale);
           note=`Downloaded ${actual}× live Figma PNG`;
           break;
         }
+        if(r.status===501||r.status===400) break;   // export disabled / invalid
       }
     }
   }catch(e){}
