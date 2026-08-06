@@ -289,8 +289,8 @@
       picks any time; <b>✕ all</b> clears an item for everyone (it asks
       first); re-categorize in zoom. Each card's <b>⬇</b> downloads that
       asset at the highest available quality — uploads at original quality,
-      library assets as a live full-res Figma export when enabled (otherwise
-      the gallery render). When the pool is ready,
+      library assets at the highest live Figma export scale that succeeds
+      (otherwise the gallery render). When the pool is ready,
       <b>⬇ Download moodboard</b> produces a single file with everything —
       images, names, credits, Figma links — and <b>Copy Figma links</b>
       gives the plain-text list.</p>
@@ -851,8 +851,8 @@ $("#lbprev").onclick=e=>{ e.stopPropagation(); navCard(-1); };
 $("#lbnext").onclick=e=>{ e.stopPropagation(); navCard(1); };
 
 /* Best-quality single-asset download: uploads come back as the original
-   bytes; library assets try the Worker's live Figma export (PNG @2x) and
-   fall back to the gallery render when export isn't enabled. */
+   bytes; library assets try live Figma PNG exports from 4x down to 1x and
+   fall back to the gallery render only when every export scale fails. */
 async function downloadAsset(id, it){
   const {key,nid}=parseQid(id);
   toast("Preparing download…");
@@ -864,8 +864,15 @@ async function downloadAsset(id, it){
       if(r.ok){ blob=await r.blob();
         ext=(blob.type.split("/")[1]||"png").replace("jpeg","jpg"); }
     } else if(key!=="custom" && state.apiBase){
-      const r=await fetch(`${state.apiBase}/export?key=${key}&node=${encodeURIComponent(nid)}`);
-      if(r.ok) blob=await r.blob();
+      for(const scale of [4,3,2,1]){
+        const r=await fetch(`${state.apiBase}/export?key=${key}&node=${encodeURIComponent(nid)}&scale=${scale}`);
+        if(r.ok){
+          blob=await r.blob();
+          const actual=r.headers.get("X-Figma-Export-Scale")||String(scale);
+          note=`Downloaded ${actual}× live Figma PNG`;
+          break;
+        }
+      }
     }
   }catch(e){}
   if(!blob){                       // gallery render fallback (q75, max 1200px)
@@ -873,7 +880,7 @@ async function downloadAsset(id, it){
     const u=ql ? (ql.src || (ql.img ? imgSrc(ql.fs, ql.img) : null)) : null;
     if(u){ try{ const r=await fetch(u);
       if(r.ok){ blob=await r.blob(); ext="jpg";
-        note="Full-res export not enabled — downloaded the gallery render"; } }catch(e){} }
+        note="Live Figma export unavailable — downloaded the gallery render"; } }catch(e){} }
   }
   if(!blob){ toast("Download failed"); return; }
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
