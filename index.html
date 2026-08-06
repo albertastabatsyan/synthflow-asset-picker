@@ -868,8 +868,8 @@ async function downloadAsset(id, it){
         let r=null;
         try{ r=await fetch(
           `${state.apiBase}/export?key=${key}&node=${encodeURIComponent(nid)}&scale=${scale}`,
-          {signal:AbortSignal.timeout(25000)}); }
-        catch(e){ continue; }             // slow render — try a smaller scale
+          {signal:AbortSignal.timeout(150000)}); }
+        catch(e){ continue; }             // beyond Figma's edge window — try smaller
         if(r.ok){
           blob=await r.blob();
           const actual=r.headers.get("X-Figma-Export-Scale")||String(scale);
