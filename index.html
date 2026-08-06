@@ -105,6 +105,9 @@
   .bgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; }
   .rmbtn { border:1px solid var(--line); background:none; color:var(--danger);
            border-radius:7px; padding:3px 10px; cursor:pointer; font-size:12px; }
+  .dlbtn { border:1px solid var(--line); background:none; color:var(--acc);
+           border-radius:7px; padding:3px 8px; cursor:pointer; font-size:12px; }
+  .dlbtn:hover { border-color:var(--acc); }
   footer { border-top:1px solid var(--line); padding:7px 16px; display:flex; gap:14px;
            flex-wrap:wrap; }
   kbd { background:var(--panel); border:1px solid var(--line); border-bottom-width:2px;
@@ -284,7 +287,10 @@
     <h3>The Vibe Bucket</h3>
     <p>The shared pool. Grouped by category, consensus first. Remove your own
       picks any time; <b>✕ all</b> clears an item for everyone (it asks
-      first); re-categorize in zoom. When the pool is ready,
+      first); re-categorize in zoom. Each card's <b>⬇</b> downloads that
+      asset at the highest available quality — uploads at original quality,
+      library assets as a live full-res Figma export when enabled (otherwise
+      the gallery render). When the pool is ready,
       <b>⬇ Download moodboard</b> produces a single file with everything —
       images, names, credits, Figma links — and <b>Copy Figma links</b>
       gives the plain-text list.</p>
@@ -788,7 +794,16 @@ function openLightbox(ci, idx){
 function openLightboxById(id){
   const ql=qlookup(id); if(!ql) return;
   const fi=state.fileset.indexOf(ql.fs);
-  if(fi!==state.fi) setFile(fi);
+  if(fi!==state.fi){
+    /* switch the underlying file for the lightbox WITHOUT leaving the
+       current tab — setFile would yank the bucket view over to the library */
+    state.fi=fi; localStorage.setItem("picker_file", F().key);
+    bindActiveFile();
+    state.sideCursor=0; state.focus="grid";
+    $("#q").value="";
+    refreshFileUI();
+    applyFilter();
+  }
   openLightbox(ql.ci, ql.mi);
 }
 function closeLightbox(){ $("#lightbox").classList.remove("show"); }
@@ -835,6 +850,37 @@ $("#lightbox").onclick=e=>{ if(e.target.id==="lightbox") closeLightbox(); };
 $("#lbprev").onclick=e=>{ e.stopPropagation(); navCard(-1); };
 $("#lbnext").onclick=e=>{ e.stopPropagation(); navCard(1); };
 
+/* Best-quality single-asset download: uploads come back as the original
+   bytes; library assets try the Worker's live Figma export (PNG @2x) and
+   fall back to the gallery render when export isn't enabled. */
+async function downloadAsset(id, it){
+  const {key,nid}=parseQid(id);
+  toast("Preparing download…");
+  const base=(it.name||"asset").replace(/[^\w \-.]+/g,"").trim().slice(0,60)||"asset";
+  let blob=null, ext="png", note="";
+  try{
+    if(key==="custom" && state.apiBase){
+      const r=await fetch(state.apiBase+"/upload/"+nid);
+      if(r.ok){ blob=await r.blob();
+        ext=(blob.type.split("/")[1]||"png").replace("jpeg","jpg"); }
+    } else if(key!=="custom" && state.apiBase){
+      const r=await fetch(`${state.apiBase}/export?key=${key}&node=${encodeURIComponent(nid)}`);
+      if(r.ok) blob=await r.blob();
+    }
+  }catch(e){}
+  if(!blob){                       // gallery render fallback (q75, max 1200px)
+    const ql=qlookup(id);
+    const u=ql ? (ql.src || (ql.img ? imgSrc(ql.fs, ql.img) : null)) : null;
+    if(u){ try{ const r=await fetch(u);
+      if(r.ok){ blob=await r.blob(); ext="jpg";
+        note="Full-res export not enabled — downloaded the gallery render"; } }catch(e){} }
+  }
+  if(!blob){ toast("Download failed"); return; }
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`${base}.${ext}`; a.click(); URL.revokeObjectURL(a.href);
+  toast(note||"Downloaded "+base+"."+ext);
+}
+
 function bucketItemCard(id, it){
   const ql=qlookup(id);
   const fs=ql?ql.fs:F(), nid=ql?ql.nid:id;
@@ -842,6 +888,10 @@ function bucketItemCard(id, it){
     {img:it.img, src:it.src, name:it.name, page:it.page, noFig:!!(ql&&ql.fs.custom)},
     ()=>openLightboxById(id));
   card.classList.add("picked");
+  const dl=document.createElement("button"); dl.className="dlbtn"; dl.textContent="⬇";
+  dl.title="Download this asset at the highest available quality";
+  dl.onclick=()=>downloadAsset(id, it);
+  meta.appendChild(dl);
   const n=Object.keys(it.pickers).length;
   if(n>1){ const cb=document.createElement("span"); cb.className="cntbadge";
     cb.textContent="×"+n; cb.title=n+" people picked this"; meta.appendChild(cb); }
@@ -1003,7 +1053,7 @@ function foot(){
   } else {
     f.appendChild(hint("click thumb","zoom + re-categorize"));
     f.appendChild(hint("remove / ✕ all","take your pick back · clear for everyone"));
-    f.appendChild(hint("⬇","moodboard = everything, self-contained"));
+    f.appendChild(hint("⬇","on a card: that asset, best quality · in the bar: the whole moodboard"));
   }
 }
 
