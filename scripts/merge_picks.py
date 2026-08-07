@@ -28,14 +28,25 @@ except Exception:
     bucket = {}
 ts = time.strftime("%Y-%m-%dT%H:%M:%S")
 n = 0
-for p in payload.get("picks", []):
+for p in payload.get("picks", [])[:200]:
     pid, cat = p.get("id"), str(p.get("cat", ""))
     if pid not in ids or (cat and cat not in cats):
         continue
+    if pid not in bucket and len(bucket) >= 2000:
+        continue                              # bucket size guard (spam)
     it = bucket.setdefault(pid, {"cat": "", "pickers": {}})
     it["pickers"][who] = ts
     if cat:
         it["cat"] = cat
     n += 1
+for rid in payload.get("removals", [])[:200]:
+    rid = str(rid)
+    it = bucket.get(rid)
+    if rid not in ids or not it:
+        continue
+    it["pickers"].pop(who, None)
+    if not it["pickers"]:
+        bucket.pop(rid, None)
+    n += 1
 json.dump(bucket, open("bucket.json", "w"))
-print(f"merged {n} picks from {who}")
+print(f"merged {n} changes from {who}")

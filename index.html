@@ -223,23 +223,25 @@
 </main>
 <footer id="foot"></footer>
 
-<div id="lightbox">
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Asset zoom">
   <div id="lbtop">
     <span id="lbcount"></span>
     <span id="lbname"></span>
     <span id="lbcat"></span>
     <a id="lbfigbig" target="_blank" rel="noopener">Open in Figma ↗</a>
+    <button class="dlbtn" id="lbdl" title="Download at the highest available quality"
+      aria-label="Download this asset">⬇</button>
     <button class="pickbtn" id="lbpick">Add to bucket</button>
     <button id="lbclose" title="Close">&times;</button>
   </div>
   <div id="lbcats"></div>
   <div id="lbimg" title="Click to close"></div>
-  <button class="lbnav" id="lbprev" title="Previous asset (←)">‹</button>
-  <button class="lbnav" id="lbnext" title="Next asset (→)">›</button>
+  <button class="lbnav" id="lbprev" title="Previous asset (←)" aria-label="Previous asset">‹</button>
+  <button class="lbnav" id="lbnext" title="Next asset (→)" aria-label="Next asset">›</button>
   <div id="lbstrip"></div>
 </div>
 
-<div id="namemodal">
+<div id="namemodal" role="dialog" aria-modal="true" aria-label="Set your name">
   <div class="box">
     <h2>Who's picking?</h2>
     <p>This is Synthflow's shared vibe-curation gallery — browse the Figma
@@ -250,7 +252,7 @@
   </div>
 </div>
 
-<div id="helpmodal">
+<div id="helpmodal" role="dialog" aria-modal="true" aria-label="What is this and how to use it">
   <div class="hbox">
     <button class="close" id="helpclose" title="Close">&times;</button>
     <h2>Synthflow Asset Picker</h2>
@@ -315,8 +317,8 @@ const state = { fileset:[], fi:0, qualify:false,
                 data:null, cards:[], filtered:[], shown:0, picks:{}, picksJson:"",
                 who:localStorage.getItem("picker_who") || "", tab:"lib",
                 lb:{ci:-1, idx:0}, pageTotals:{},
-                staticCfg:null, localPicks:{}, apiBase:"", cursor:-1,
-                focus:"grid", sideCursor:0, libJson:"" };
+                staticCfg:null, localPicks:{}, localRm:{}, apiBase:"", cursor:-1,
+                focus:"grid", sideCursor:0, libJson:"", refreshing:false };
 /* apiBase: "" = same-origin live server; "<url>" = remote live bucket;
    null = no live backend — picks queue locally and ship via GitHub issue. */
 function queueMode(){ return state.staticCfg && state.apiBase===null; }
@@ -432,6 +434,8 @@ async function boot(){
     } else {
       try{ state.localPicks=JSON.parse(localStorage.getItem("picker_local")||"{}"); }
       catch(e){ state.localPicks={}; }
+      try{ state.localRm=JSON.parse(localStorage.getItem("picker_local_rm")||"{}"); }
+      catch(e){ state.localRm={}; }
       const sb=document.createElement("button"); sb.className="tab"; sb.id="submitbtn";
       sb.textContent="Submit picks (0)"; sb.onclick=submitPicks;
       document.querySelector(".tabs").appendChild(sb);
@@ -508,7 +512,23 @@ function setFile(i){
 
 function updateWho(){ $("#whochip").textContent = state.who ? `picking as ${state.who}` : "set your name"; }
 
+/* Grid pick-chip state: is it in the bucket, and is one of the picks mine? */
+function pickChip(id){
+  const it=state.picks[id];
+  if(!it) return {txt:"+ Pick", on:false,
+    title:"Pick this into the shared bucket"};
+  return it.pickers[state.who]
+    ? {txt:"In bucket ✓", on:true, title:"Your pick — click to unpick"}
+    : {txt:"In bucket · join", on:true,
+       title:"Picked by "+Object.keys(it.pickers).join(", ")+" — click to add your pick too"};
+}
+
 async function refreshPicks(force){
+  if(state.refreshing){                    // overlapping polls: skip; but never
+    if(force===true) state.refreshPending=true;   // drop a forced (post-action) one
+    return;
+  }
+  state.refreshing=true;
   try{
     let p;
     if(queueMode()){
@@ -529,8 +549,14 @@ async function refreshPicks(force){
         it.pickers[state.who||"me"]=lp.ts||"";
         it.cat=lp.cat||it.cat||"";
       }
+      for(const id of Object.keys(state.localRm)){   // queued removals overlay
+        if(!p[id] || !p[id].pickers[state.who]){     // upstream lost my pick — done
+          delete state.localRm[id]; changed=true; continue; }
+        delete p[id].pickers[state.who];
+        if(!Object.keys(p[id].pickers).length) delete p[id];
+      }
       if(changed) persistLocal();
-      const n=Object.keys(state.localPicks).length;
+      const n=Object.keys(state.localPicks).length+Object.keys(state.localRm).length;
       const sb=$("#submitbtn"); if(sb){ sb.textContent=`Submit picks (${n})`; sb.disabled=!n; }
     } else {
       /* refresh the shared Custom library alongside picks */
@@ -558,15 +584,23 @@ async function refreshPicks(force){
       const inb = c.members.some(m=>p[qid(m.id)]) || p[qid(c.id)];
       cardEl.classList.toggle("picked", !!inb);
       const b = cardEl.querySelector(".pickbtn");
-      b.classList.toggle("on", !!p[qid(c.id)]);
-      b.textContent = p[qid(c.id)] ? "In bucket" : "+ Pick";
+      const ch = pickChip(qid(c.id));
+      b.classList.toggle("on", ch.on);
+      b.textContent = ch.txt; b.title = ch.title;
       esc(cardEl.querySelector(".catbadge"),
           p[qid(c.id)] && p[qid(c.id)].cat ? catLabel(p[qid(c.id)].cat) : "");
     });
+    if(state.tab==="lib" && $("#hidepicked").checked){
+      const cpos=state.cursor;                // picked cards vanish immediately
+      applyFilter();
+      if(cpos>=0 && state.filtered.length) setCursor(Math.min(cpos, state.filtered.length-1));
+    }
     renderSidebar();
     if(state.tab==="bucket") renderBucket();
     if($("#lightbox").classList.contains("show")) renderLightbox();
   }catch(e){}
+  finally{ state.refreshing=false;
+    if(state.refreshPending){ state.refreshPending=false; refreshPicks(true); } }
 }
 
 function selectPage(p){ $("#pagefilter").value=p; setTab("lib"); applyFilter(); }
@@ -693,6 +727,7 @@ function renderMore(){
     if(F().custom && c.who && c.who===state.who){
       const rm=document.createElement("button"); rm.className="rmbtn"; rm.textContent="✕";
       rm.title="Remove this upload from the Custom library";
+      rm.setAttribute("aria-label","Remove upload "+c.name);
       rm.onclick=async e=>{ e.stopPropagation();
         if(!confirm(`Remove "${c.name}" from the shared Custom library?`)) return;
         await fetch(state.apiBase+"/library-remove",{method:"POST",
@@ -704,8 +739,9 @@ function renderMore(){
     if(c.members.length>1){ const mc=document.createElement("span"); mc.className="mcount";
       mc.textContent="×"+c.members.length; card.appendChild(mc); }
     const pb=document.createElement("button"); pb.className="pickbtn";
-    pb.textContent = state.picks[qid(c.id)] ? "In bucket" : "+ Pick";
-    if(state.picks[qid(c.id)]) pb.classList.add("on");
+    const ch=pickChip(qid(c.id));
+    pb.textContent=ch.txt; pb.title=ch.title;
+    if(ch.on) pb.classList.add("on");
     meta.appendChild(pb);                                       // status chip; click bubbles to card
     const cb=el("catbadge");
     if(state.picks[qid(c.id)] && state.picks[qid(c.id)].cat)
@@ -720,12 +756,17 @@ function renderMore(){
 new IntersectionObserver(es=>{ if(es[0].isIntersecting && state.shown<state.filtered.length) renderMore(); },
   {rootMargin:"1200px"}).observe($("#sentinel"));
 
-function persistLocal(){ localStorage.setItem("picker_local", JSON.stringify(state.localPicks)); }
+function persistLocal(){
+  localStorage.setItem("picker_local", JSON.stringify(state.localPicks));
+  localStorage.setItem("picker_local_rm", JSON.stringify(state.localRm));
+}
 function submitPicks(){
-  const ids=Object.keys(state.localPicks); if(!ids.length) return;
+  const ids=Object.keys(state.localPicks), rms=Object.keys(state.localRm);
+  if(!ids.length && !rms.length) return;
   const who=state.who||"anon";
-  const picks=ids.map(id=>({id, cat:state.localPicks[id].cat||""}));
-  const body="```json\n"+JSON.stringify({who, picks})+"\n```";
+  const payload={who, picks:ids.map(id=>({id, cat:state.localPicks[id].cat||""}))};
+  if(rms.length) payload.removals=rms;
+  const body="```json\n"+JSON.stringify(payload)+"\n```";
   const base=`https://github.com/${state.staticCfg.issue_repo}/issues/new`;
   const url=`${base}?title=${encodeURIComponent("picks: "+who)}&body=${encodeURIComponent(body)}`;
   if(url.length<7000){ window.open(url,"_blank","noopener");
@@ -740,8 +781,9 @@ async function doPick(id, action, cat){
     if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); return; }
     if(action==="remove"){
       if(state.localPicks[id]){ delete state.localPicks[id]; toast("Removed (was not yet submitted)"); }
-      else { toast("Already submitted — picks in the shared bucket stay"); return; }
+      else { state.localRm[id]=1; toast("Removal queued — Submit to apply"); }
     } else {
+      delete state.localRm[id];             // re-adding cancels a queued removal
       state.localPicks[id]={cat:cat||"", ts:new Date().toISOString().slice(0,19)};
       toast((cat ? "→ "+catLabel(cat) : "Picked")+" — submit to share");
     }
@@ -831,6 +873,7 @@ function renderLightbox(){
   pb.textContent = it ? (mine?"In bucket ✓ (remove)":"In bucket ✓ (add my pick)") : "+ Add to bucket";
   pb.classList.toggle("on", !!it);
   pb.onclick=()=>togglePick(qid(m.id));
+  $("#lbdl").onclick=()=>downloadAsset(qid(m.id), {name:m.name||c.name});
   const box=$("#lbimg"); box.innerHTML="";
   if(m.src || m.img){ const im=document.createElement("img");
     im.src=m.src || imgSrc(F(), m.img);
@@ -906,6 +949,7 @@ function bucketItemCard(id, it){
   card.classList.add("picked");
   const dl=document.createElement("button"); dl.className="dlbtn"; dl.textContent="⬇";
   dl.title="Download this asset at the highest available quality";
+  dl.setAttribute("aria-label","Download "+(it.name||"asset"));
   dl.onclick=()=>downloadAsset(id, it);
   meta.appendChild(dl);
   const n=Object.keys(it.pickers).length;
@@ -921,6 +965,7 @@ function bucketItemCard(id, it){
     const all=Object.keys(it.pickers).join(", ");
     const ca=document.createElement("button"); ca.className="rmbtn"; ca.textContent="✕ all";
     ca.title="Remove this from the bucket for everyone (picked by "+all+")";
+    ca.setAttribute("aria-label","Remove "+(it.name||"asset")+" from the bucket for everyone");
     ca.onclick=()=>{ if(confirm(`Remove "${it.name}" from the bucket for everyone?\nPicked by: ${all}.`))
       doPick(id,"clear"); };
     meta.appendChild(ca);
@@ -1000,7 +1045,9 @@ function copyFigmaLinks(){
     for(const id of gids){
       const it=state.picks[id];
       const {key,nid}=parseQid(id);
-      if(key==="custom"){ lines.push(`${it.name} — (uploaded image)`); continue; }
+      if(key==="custom"){
+        lines.push(`${it.name} — ${state.apiBase ? state.apiBase+"/upload/"+nid : "(uploaded image)"}`);
+        continue; }
       lines.push(`${it.name} — ${figURL(nid, key)}`);
     }
     lines.push("");
@@ -1013,6 +1060,7 @@ function copyFigmaLinks(){
 async function downloadMoodboard(){
   toast("Building moodboard…");
   const toDataURL=async url=>{
+    if(!url) return null;
     try{ const b=await (await fetch(url)).blob();
       return await new Promise(res=>{ const r=new FileReader();
         r.onload=()=>res(r.result); r.readAsDataURL(b); }); }
@@ -1107,7 +1155,7 @@ $("#nameinput").addEventListener("keydown",e=>{ if(e.key==="Enter") saveName(); 
 $("#namemodal").onclick=e=>{ if(e.target.id==="namemodal" && state.who)
   $("#namemodal").classList.remove("show"); };
 
-function openHelp(){ $("#helpmodal").classList.add("show"); }
+function openHelp(){ $("#helpmodal").classList.add("show"); $("#helpclose").focus(); }
 function closeHelp(){ $("#helpmodal").classList.remove("show"); }
 $("#helpbtn").onclick=openHelp;
 $("#helpclose").onclick=closeHelp;
@@ -1153,5 +1201,9 @@ document.addEventListener("keydown",e=>{
   }
 });
 
-boot();
+boot().catch(()=>{                       // network/deploy hiccup: say so, offer retry
+  const s=$("#sub"); s.textContent="load failed — ";
+  const a=document.createElement("a"); a.href="?r="+Date.now();
+  a.textContent="retry"; a.style.color="var(--acc)"; s.appendChild(a);
+});
 </script>
