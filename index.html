@@ -198,7 +198,8 @@
   <label class="sel"><input type="checkbox" id="hidepicked">hide picked</label>
   <select id="filefilter"></select>
   <select id="pagefilter"><option value="">All pages</option></select>
-  <button class="who" id="whochip">…</button>
+  <button class="who" id="whochip"
+    title="Your picks are tagged with this name — click to change it">…</button>
   <button class="tab" id="helpbtn" title="What is this & how to use it">?</button>
 </header>
 
@@ -299,7 +300,10 @@
     <p>Every card's <b>Figma ↗</b> jumps to the real asset in Figma (you need
       access to that Figma file). Nothing here writes to Figma — picking is
       opinion-pooling, not moving files. Your name and picks are visible to
-      everyone with the link.</p>
+      everyone with the link. The name is remembered in this browser — you're
+      asked once per device; click the <b>picking as …</b> chip up top to
+      change it any time. (In-app browsers — e.g. opening the link inside
+      Slack — may forget it; open in your regular browser instead.)</p>
   </div>
 </div>
 
@@ -1099,6 +1103,9 @@ function saveName(){
 }
 $("#namego").onclick=saveName;
 $("#nameinput").addEventListener("keydown",e=>{ if(e.key==="Enter") saveName(); });
+/* Renaming is optional — dismiss by clicking outside (first run still needs a name). */
+$("#namemodal").onclick=e=>{ if(e.target.id==="namemodal" && state.who)
+  $("#namemodal").classList.remove("show"); };
 
 function openHelp(){ $("#helpmodal").classList.add("show"); }
 function closeHelp(){ $("#helpmodal").classList.remove("show"); }
@@ -1109,6 +1116,7 @@ $("#helpmodal").onclick=e=>{ if(e.target.id==="helpmodal") closeHelp(); };
 document.addEventListener("keydown",e=>{
   if(e.metaKey||e.ctrlKey) return;
   if(e.key==="Escape"){ closeLightbox(); closeHelp();
+    if(state.who) $("#namemodal").classList.remove("show");
     if(state.focus==="side"){ state.focus="grid"; updateSideUI(); updateCursorUI(); } return; }
   if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT") return;
   const k=e.key.toLowerCase();
