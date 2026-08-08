@@ -11,6 +11,10 @@ The in-app "?" button explains usage.
   everyone sees the pool within seconds. The Custom library (upload / drag &
   drop, remove your own) is served by the same Worker and appears only while
   it is reachable.
+- The Vibe Bucket's category row is shared and editable in the picker (add /
+  rename / delete, drag cards onto a category to re-file). The Worker stores
+  the list; deleting a category files its picks as Uncategorized. Without the
+  Worker the static 13-category taxonomy applies read-only.
 - If the Worker is unreachable, picks queue in-browser and **Submit picks**
   opens a pre-filled GitHub issue; a repo Action merges submissions (adds and
   removals) into `bucket.json` for everyone.

@@ -103,6 +103,31 @@
   .bhead:first-child { margin-top:0; }
   .bhead .n { color:var(--dim); font-weight:400; }
   .bgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; }
+  .bgrid .card { cursor:grab; }
+  .bgrid .card.bdragging { opacity:.45; }
+  #catstrip { display:flex; gap:10px; overflow-x:auto; padding:14px 2px;
+              position:sticky; top:0; z-index:5; background:var(--bg);
+              margin-top:-16px; border-bottom:1px solid var(--line); }
+  .ccard { flex:0 0 auto; width:172px; background:var(--panel); border:1px solid var(--line);
+           border-radius:10px; padding:10px 12px; cursor:pointer;
+           display:flex; flex-direction:column; gap:6px; }
+  .ccard:hover { border-color:#3a3e44; }
+  .ccard.droptgt { border-color:var(--pick); box-shadow:0 0 0 1px var(--pick); }
+  .ccard .cl { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden;
+               text-overflow:ellipsis; }
+  .ccard .cn { color:var(--dim); font-size:11px; display:flex; gap:6px; align-items:center; }
+  .ccard .cn kbd { padding:0 4px; font-size:10px; }
+  .ccard .cact { display:flex; gap:4px; margin-top:auto; visibility:hidden; }
+  .ccard:hover .cact { visibility:visible; }
+  .ccard .cact button { border:1px solid var(--line); background:none; color:var(--dim);
+                        border-radius:6px; padding:1px 7px; cursor:pointer; font-size:11px; }
+  .ccard .cact button:hover { color:var(--txt); border-color:var(--acc); }
+  .ccard .cact button.del:hover { color:var(--danger); border-color:var(--danger); }
+  .ccard.newcat { border-style:dashed; color:var(--dim); justify-content:center;
+                  align-items:center; min-height:66px; }
+  .ccard.newcat:hover { color:var(--acc); border-color:var(--acc); }
+  .ccard input { background:var(--bg); border:1px solid var(--acc); color:var(--txt);
+                 border-radius:6px; padding:3px 6px; font-size:12px; outline:none; width:100%; }
   .rmbtn { border:1px solid var(--line); background:none; color:var(--danger);
            border-radius:7px; padding:3px 10px; cursor:pointer; font-size:12px; }
   .dlbtn { border:1px solid var(--line); background:none; color:var(--acc);
@@ -288,7 +313,11 @@
       picked</b> keeps your sweep clean.</p>
 
     <h3>The Vibe Bucket</h3>
-    <p>The shared pool. Grouped by category, consensus first. Remove your own
+    <p>The shared pool. Grouped by category, consensus first. The category row
+      on top is shared and editable — <b>＋</b> adds, <b>✎</b> renames,
+      <b>✕</b> deletes a category (its picks move to Uncategorized) — and
+      <b>dragging any card onto a category</b> re-files it for everyone;
+      clicking a category jumps to its section. Remove your own
       picks any time; <b>✕ all</b> clears an item for everyone (it asks
       first); re-categorize in zoom. Each card's <b>⬇</b> downloads that
       asset at the highest available quality — uploads at original quality,
@@ -318,7 +347,8 @@ const state = { fileset:[], fi:0, qualify:false,
                 who:localStorage.getItem("picker_who") || "", tab:"lib",
                 lb:{ci:-1, idx:0}, pageTotals:{},
                 staticCfg:null, localPicks:{}, localRm:{}, apiBase:"", cursor:-1,
-                focus:"grid", sideCursor:0, libJson:"", refreshing:false };
+                focus:"grid", sideCursor:0, libJson:"", refreshing:false,
+                categories:[], catsJson:"", catsLive:false, hotmap:{}, dragId:null };
 /* apiBase: "" = same-origin live server; "<url>" = remote live bucket;
    null = no live backend — picks queue locally and ship via GitHub issue. */
 function queueMode(){ return state.staticCfg && state.apiBase===null; }
@@ -330,10 +360,21 @@ function el(cls, txt){ const d=document.createElement("div"); d.className=cls;
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.style.display="block";
   clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none", 1800); }
 function F(){ return state.fileset[state.fi]; }
-function catLabel(k){ const c=(state.data.categories||[]).find(c=>c[0]===k);
+/* Categories are shared, editable state: the live Worker list when reachable
+   (state.catsLive), otherwise the static taxonomy from data.json. Ids are
+   stable; hotkeys are derived from list order (first 13). */
+function cats(){ return state.categories; }
+function catLabel(k){ const c=cats().find(c=>c[0]===k);
   return c ? c[1] : ""; }
 function activeCat(){ const v=$("#pickcat").value;
-  return (state.data.categories||[]).some(c=>c[0]===v) ? v : ""; }
+  return cats().some(c=>c[0]===v) ? v : ""; }
+/* A pick whose category was deleted (or arrived via a fallback lane) files
+   as Uncategorized everywhere instead of silently disappearing. */
+function effCat(id){ const c=state.picks[id].cat||"";
+  return cats().some(x=>x[0]===c) ? c : ""; }
+const HOTCHARS="1234567890qwe";
+function hotkeyFor(i){ return i<HOTCHARS.length ? HOTCHARS[i] : ""; }
+function canEditCats(){ return state.catsLive; }
 /* Bucket ids: multi-file sites qualify node ids as "<fileKey>~<nodeId>" so
    identical node ids in different Figma files cannot collide. */
 function qid(nodeId, fileKey){ return state.qualify ? `${fileKey||F().key}~${nodeId}` : nodeId; }
@@ -405,6 +446,33 @@ function baseCard(nodeId, fs, info, onZoom){
   return {card, meta};
 }
 
+/* (Re)build every category-driven control from state.categories: the header
+   "pick into" select (selection preserved while its id survives), the
+   lightbox chips, and the derived hotkey map. Runs at boot and whenever the
+   shared list changes on a poll. */
+function applyCats(){
+  state.catsJson=JSON.stringify(state.categories);
+  state.hotmap={};
+  cats().forEach((c,i)=>{ const h=hotkeyFor(i); if(h) state.hotmap[h]=c[0]; });
+  const pc=$("#pickcat"); const prev=pc.value;
+  pc.innerHTML="";
+  const o0=document.createElement("option"); o0.value=""; o0.textContent="no category";
+  pc.appendChild(o0);
+  for(const [k,label] of cats()){
+    const o=document.createElement("option"); o.value=k; esc(o,label); pc.appendChild(o);
+  }
+  pc.value = cats().some(c=>c[0]===prev) ? prev : "";
+  const lb=$("#lbcats"); lb.innerHTML="";
+  cats().forEach(([k,label],i)=>{
+    const c=document.createElement("span"); c.className="cchip"; c.dataset.k=k; c.title=label;
+    const h=hotkeyFor(i);
+    if(h){ const kb=document.createElement("kbd"); kb.textContent=h.toUpperCase(); c.appendChild(kb); }
+    c.appendChild(document.createTextNode(label));
+    c.onclick=()=>lbAssign(k);
+    lb.appendChild(c);
+  });
+}
+
 async function boot(){
   try{ const cf=await fetch("config.json",{cache:"no-store"});
        if(cf.ok) state.staticCfg=await cf.json(); }catch(e){}
@@ -458,20 +526,16 @@ async function boot(){
     ff.onchange=()=>setFile(Number(ff.value));
     sw.appendChild(fsel);
   }
-  for(const [k,label] of state.data.categories){
-    const o=document.createElement("option"); o.value=k; esc(o,label);
-    $("#pickcat").appendChild(o);
+  state.categories = state.data.categories || [];
+  if(state.apiBase){                    // live Worker: shared editable categories
+    try{ const cr=await fetch(state.apiBase+"/categories",{cache:"no-store"});
+         if(cr.ok){ const cl=(await cr.json()).categories;
+           if(Array.isArray(cl)){ state.categories=cl; state.catsLive=true; } } }catch(e){}
   }
+  applyCats();
   const savedCat=localStorage.getItem("picker_cat")||"";
-  if(state.data.categories.some(c=>c[0]===savedCat)) $("#pickcat").value=savedCat;
+  if(cats().some(c=>c[0]===savedCat)) $("#pickcat").value=savedCat;
   $("#pickcat").onchange=()=>localStorage.setItem("picker_cat", $("#pickcat").value);
-  for(const [k,label] of state.data.categories){
-    const c=document.createElement("span"); c.className="cchip"; c.dataset.k=k; c.title=label;
-    const kb=document.createElement("kbd"); kb.textContent=k.toUpperCase(); c.appendChild(kb);
-    c.appendChild(document.createTextNode(label.slice(5)));
-    c.onclick=()=>lbAssign(k);
-    $("#lbcats").appendChild(c);
-  }
   await refreshPicks(true);
   refreshFileUI();
   applyFilter();
@@ -566,6 +630,14 @@ async function refreshPicks(force){
             const idx=state.fileset.findIndex(f=>f.custom);
             if(idx>=0){ state.fileset[idx]=mkCustomFile(lib);
               if(idx===state.fi){ bindActiveFile(); refreshFileUI(); applyFilter(); } } } }
+      }catch(e){}
+      /* the shared category list refreshes on the same cycle */
+      try{ const cr=await fetch(state.apiBase+"/categories",{cache:"no-store"});
+        if(cr.ok){ const cl=(await cr.json()).categories;
+          if(Array.isArray(cl) && JSON.stringify(cl)!==state.catsJson){
+            state.categories=cl; state.catsLive=true; applyCats();
+            if(state.tab==="bucket") renderBucket();
+            if($("#lightbox").classList.contains("show")) renderLightbox(); } }
       }catch(e){}
       p = await (await fetch(state.apiBase+"/picks")).json();
       for(const id of Object.keys(p)){          // enrich from data.json / the
@@ -809,7 +881,7 @@ function togglePick(id){
   if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); return; }
   const it = state.picks[id];
   if(it && it.pickers[state.who]) return doPick(id,"remove");
-  if(it) return doPick(id,"add",it.cat||"");
+  if(it) return doPick(id,"add",effCat(id));   // joining keeps a *known* category
   doPick(id,"add",activeCat());
 }
 
@@ -947,6 +1019,16 @@ function bucketItemCard(id, it){
     {img:it.img, src:it.src, name:it.name, page:it.page, noFig:!!(ql&&ql.fs.custom)},
     ()=>openLightboxById(id));
   card.classList.add("picked");
+  /* drag a bucket card onto a strip category to re-file it */
+  card.draggable=true;
+  const im=card.querySelector(".thumbwrap img");
+  if(im) im.draggable=false;           // the card drags as one unit, not the image
+  card.addEventListener("dragstart",e=>{ state.dragId=id;
+    card.classList.add("bdragging");
+    e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed="move"; });
+  card.addEventListener("dragend",()=>{ state.dragId=null;
+    card.classList.remove("bdragging");
+    document.querySelectorAll(".ccard.droptgt").forEach(x=>x.classList.remove("droptgt")); });
   const dl=document.createElement("button"); dl.className="dlbtn"; dl.textContent="⬇";
   dl.title="Download this asset at the highest available quality";
   dl.setAttribute("aria-label","Download "+(it.name||"asset"));
@@ -979,8 +1061,110 @@ function bucketItemCard(id, it){
   return card;
 }
 
+/* Shared category edits go through the Worker; the response carries the new
+   list so the UI updates without waiting for the next poll. */
+async function editCats(body){
+  try{
+    const r=await fetch(state.apiBase+"/categories-edit",{method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    if(r.ok){
+      const cl=(await r.json()).categories;
+      if(Array.isArray(cl)){ state.categories=cl; applyCats(); }
+      toast(body.action==="add" ? "Category added" :
+            body.action==="rename" ? "Category renamed" : "Category deleted");
+      await refreshPicks(true);          // re-renders the bucket (and any recats)
+    } else {
+      const err=await r.json().catch(()=>({}));
+      toast(err.error||"Category change failed");
+      if(state.tab==="bucket") renderBucket();
+    }
+  }catch(e){ toast("Category change failed"); if(state.tab==="bucket") renderBucket(); }
+}
+
+/* Inline label editor inside a strip card: Enter/blur commits, Escape cancels. */
+function stripEdit(card, id, current){
+  card.innerHTML=""; card.onclick=e=>e.stopPropagation();
+  const inp=document.createElement("input"); inp.maxLength=40; inp.value=current;
+  inp.placeholder=id ? "Rename category" : "New category name";
+  card.appendChild(inp); inp.focus(); inp.select();
+  let closed=false;
+  const done=commit=>{
+    if(closed) return; closed=true;
+    inp.onblur=null; inp.blur();       // release focus so re-renders are not skipped
+    const label=inp.value.replace(/[<>&"]/g,"").trim().slice(0,40);
+    if(commit && label && label!==current)
+      editCats(id ? {action:"rename", id, label} : {action:"add", label});
+    else if(state.tab==="bucket") renderBucket();
+  };
+  inp.onkeydown=e=>{ e.stopPropagation();
+    if(e.key==="Enter") done(true);
+    else if(e.key==="Escape") done(false); };
+  inp.onblur=()=>done(true);
+}
+
+/* The one-row category strip on top of the bucket: every card is a drag &
+   drop target for bucket assets; with the live Worker the categories are
+   also editable (add / rename / delete) for everyone. */
+function catStrip(){
+  const strip=document.createElement("div"); strip.id="catstrip";
+  const counts={};
+  for(const id in state.picks){ const g=effCat(id); counts[g]=(counts[g]||0)+1; }
+  const mkCard=(cid, label, hot)=>{
+    const c=el("ccard"); c.dataset.cat=cid;
+    c.appendChild(el("cl", label));
+    const cn=el("cn");
+    const n=counts[cid]||0;
+    cn.appendChild(document.createTextNode(n===1 ? "1 pick" : n+" picks"));
+    if(hot){ const kb=document.createElement("kbd"); kb.textContent=hot.toUpperCase();
+      cn.appendChild(kb); }
+    c.appendChild(cn);
+    if(cid!=="" && canEditCats()){
+      const act=el("cact");
+      const rn=document.createElement("button"); rn.textContent="✎ rename";
+      rn.title="Rename this category for everyone";
+      rn.onclick=e=>{ e.stopPropagation(); stripEdit(c, cid, label); };
+      const del=document.createElement("button"); del.className="del"; del.textContent="✕";
+      del.title="Delete this category for everyone";
+      del.onclick=e=>{ e.stopPropagation();
+        if(confirm(`Delete category "${label}" for everyone?`+
+                   (n ? ` Its ${n} pick${n>1?"s":""} move to Uncategorized.` : "")))
+          editCats({action:"remove", id:cid}); };
+      act.appendChild(rn); act.appendChild(del);
+      c.appendChild(act);
+    }
+    c.onclick=()=>{ const t=document.getElementById("bg-"+(cid||"uncat"));
+      if(t) t.scrollIntoView({behavior:"smooth", block:"start"});
+      else toast(cid ? "Nothing in this category yet — drag cards onto it"
+                     : "No uncategorized picks"); };
+    c.addEventListener("dragover",e=>{ if(state.dragId!==null){ e.preventDefault();
+      e.dataTransfer.dropEffect="move"; c.classList.add("droptgt"); } });
+    c.addEventListener("dragleave",()=>c.classList.remove("droptgt"));
+    c.addEventListener("drop",e=>{ e.preventDefault(); c.classList.remove("droptgt");
+      const id=state.dragId; state.dragId=null;
+      if(id && state.picks[id] && effCat(id)!==cid) doPick(id,"recat",cid); });
+    return c;
+  };
+  cats().forEach(([k,label],i)=>strip.appendChild(mkCard(k, label, hotkeyFor(i))));
+  strip.appendChild(mkCard("", "Uncategorized", ""));
+  if(canEditCats()){
+    const add=el("ccard newcat","＋ New category");
+    add.title="Add a shared category — everyone sees it";
+    add.onclick=()=>stripEdit(add, null, "");
+    strip.appendChild(add);
+  }
+  return strip;
+}
+
 function renderBucket(){
-  const v=$("#bucketview"); v.innerHTML="";
+  const v=$("#bucketview");
+  /* never clobber an in-progress inline category edit on a poll re-render */
+  if(v.contains(document.activeElement) && document.activeElement.tagName==="INPUT") return;
+  const prevStrip=v.querySelector("#catstrip");
+  const stripScroll=prevStrip ? prevStrip.scrollLeft : 0;
+  v.innerHTML="";
+  const strip=catStrip();
+  v.appendChild(strip);
+  strip.scrollLeft=stripScroll;          // polls must not yank the strip back
   const bar=el("bbar");
   const ids=Object.keys(state.picks);
   if(ids.length){
@@ -993,9 +1177,9 @@ function renderBucket(){
   if(!ids.length){ v.appendChild(el("empty","Vibe bucket is empty — pick from the libraries.")); return; }
   const latest=id=>Object.values(state.picks[id].pickers).sort().pop()||"";
   const votes=id=>Object.keys(state.picks[id].pickers).length;
-  const groups=[...state.data.categories.map(c=>c[0]), ""];
+  const groups=[...cats().map(c=>c[0]), ""];
   for(const g of groups){
-    const gids=ids.filter(id=>(state.picks[id].cat||"")===g)
+    const gids=ids.filter(id=>effCat(id)===g)
                   .sort((a,b)=> votes(b)-votes(a) || latest(b).localeCompare(latest(a)));
     if(!gids.length) continue;
     const h=el("bhead", g ? catLabel(g) : "Uncategorized"); h.id="bg-"+(g||"uncat");
@@ -1037,9 +1221,9 @@ stage.addEventListener("drop",e=>{ if(state.tab!=="lib"||!F()||!F().custom) retu
 
 function copyFigmaLinks(){
   const lines=[];
-  const groups=[...state.data.categories.map(c=>c[0]), ""];
+  const groups=[...cats().map(c=>c[0]), ""];
   for(const g of groups){
-    const gids=Object.keys(state.picks).filter(id=>(state.picks[id].cat||"")===g);
+    const gids=Object.keys(state.picks).filter(id=>effCat(id)===g);
     if(!gids.length) continue;
     lines.push(`## ${g?catLabel(g):"Uncategorized"}`);
     for(const id of gids){
@@ -1067,10 +1251,10 @@ async function downloadMoodboard(){
     catch(e){ return null; }
   };
   const eschtml=s=>String(s||"").replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
-  const groups=[...state.data.categories.map(c=>c[0]), ""];
+  const groups=[...cats().map(c=>c[0]), ""];
   let cards="";
   for(const g of groups){
-    const gids=Object.keys(state.picks).filter(id=>(state.picks[id].cat||"")===g)
+    const gids=Object.keys(state.picks).filter(id=>effCat(id)===g)
       .sort((a,b)=>Object.keys(state.picks[b].pickers).length-Object.keys(state.picks[a].pickers).length);
     if(!gids.length) continue;
     cards+=`<h2>${eschtml(g?catLabel(g):"Uncategorized")} · ${gids.length}</h2><div class="grid">`;
@@ -1115,9 +1299,12 @@ function foot(){
     f.appendChild(hint("click image / Enter","zoom · click image closes"));
     if(queueMode()) f.appendChild(hint("Submit","opens a GitHub issue with your picks"));
   } else {
+    f.appendChild(hint("drag","a card onto a category above to re-file it"));
     f.appendChild(hint("click thumb","zoom + re-categorize"));
     f.appendChild(hint("remove / ✕ all","take your pick back · clear for everyone"));
     f.appendChild(hint("⬇","on a card: that asset, best quality · in the bar: the whole moodboard"));
+    if(canEditCats())
+      f.appendChild(hint("✎ ✕ ＋","categories are shared — rename, delete, add for everyone"));
   }
 }
 
@@ -1176,8 +1363,8 @@ document.addEventListener("keydown",e=>{
     if(k==="arrowup"){ e.preventDefault();
       state.lb.idx=Math.max(state.lb.idx-1,0); renderLightbox(); return; }
     if(k==="f"){ const m=lbCur(); if(m && !F().custom) window.open(figURL(m.id),"_blank","noopener"); return; }
-    const cat=(state.data.categories||[]).find(c=>c[0]===k);
-    if(cat) lbAssign(cat[0]);
+    const catId=state.hotmap[k];
+    if(catId) lbAssign(catId);
     return;
   }
   if(state.tab!=="lib") return;
@@ -1196,8 +1383,8 @@ document.addEventListener("keydown",e=>{
     const c=state.cards[state.filtered[state.cursor]];
     if(e.key==="Enter"){ openLightbox(state.filtered[state.cursor],0); return; }
     if(e.key===" "||e.code==="Space"){ e.preventDefault(); togglePick(qid(c.id)); return; }
-    const cat=(state.data.categories||[]).find(x=>x[0]===k);
-    if(cat){ doPick(qid(c.id), state.picks[qid(c.id)] ? "recat" : "add", cat[0]); }
+    const catId=state.hotmap[k];
+    if(catId){ doPick(qid(c.id), state.picks[qid(c.id)] ? "recat" : "add", catId); }
   }
 });
 

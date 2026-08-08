@@ -13,11 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Snapshot bucket + library
+      - name: Snapshot bucket + library + categories
         run: |
           mkdir -p snapshots
-          curl -sf https://synthflow-asset-picker-bucket.albertastabatsyan.workers.dev/picks   -o snapshots/picks.json
-          curl -sf https://synthflow-asset-picker-bucket.albertastabatsyan.workers.dev/library -o snapshots/library.json
+          curl -sf https://synthflow-asset-picker-bucket.albertastabatsyan.workers.dev/picks      -o snapshots/picks.json
+          curl -sf https://synthflow-asset-picker-bucket.albertastabatsyan.workers.dev/library    -o snapshots/library.json
+          curl -sf https://synthflow-asset-picker-bucket.albertastabatsyan.workers.dev/categories -o snapshots/categories.json
       - name: Commit if changed
         run: |
           git config user.name "snapshot-bot"

@@ -2,6 +2,8 @@
 """Merge a "picks:" issue's JSON payload into bucket.json (add/overlay only).
 
 Valid ids are "<fileKey>~<nodeId>" over every file listed in config.json.
+Category ids are shape-checked only — the editable category list lives in the
+Worker, and the picker renders unknown ids as Uncategorized.
 """
 import json, os, re, sys, time
 
@@ -15,10 +17,9 @@ except ValueError:
     print("bad json"); sys.exit(0)
 who = re.sub(r"[^\w \-.]", "", str(payload.get("who", "anon")))[:40].strip() or "anon"
 cfg = json.load(open("config.json"))
-ids, cats = set(), set()
+ids = set()
 for f in cfg.get("files", []):
     d = json.load(open(os.path.join(f["dir"], "data.json")))
-    cats.update(k for k, _ in d["categories"])
     for c in d["clusters"]:
         ids.add(f'{f["key"]}~{c["id"]}')
         ids.update(f'{f["key"]}~{mm["id"]}' for mm in c["members"])
@@ -30,7 +31,7 @@ ts = time.strftime("%Y-%m-%dT%H:%M:%S")
 n = 0
 for p in payload.get("picks", [])[:200]:
     pid, cat = p.get("id"), str(p.get("cat", ""))
-    if pid not in ids or (cat and cat not in cats):
+    if pid not in ids or (cat and not re.fullmatch(r"[\w-]{1,24}", cat)):
         continue
     if pid not in bucket and len(bucket) >= 2000:
         continue                              # bucket size guard (spam)
