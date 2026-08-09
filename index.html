@@ -229,6 +229,7 @@
     <select id="pickcat"><option value="">no category</option></select>
   </label>
   <input type="search" id="q" placeholder="Search name or page…">
+  <select id="shelffilter" title="Show only library pages that feed a given shelf"></select>
   <label class="sel"><input type="checkbox" id="hidepicked">hide picked</label>
   <select id="filefilter"></select>
   <select id="pagefilter"><option value="">All pages</option></select>
@@ -300,7 +301,9 @@
       (Landing Pages &amp; Graphics)</b> Figma files — switch libraries with
       the dropdown at the top of the left sidebar.
       Near-duplicates are stacked into one card (the ×N corner tag); the page
-      list below mirrors the Figma file's pages. The <b>Custom</b> library is
+      list below mirrors the Figma file's pages, and the <b>shelf dropdown</b>
+      up top filters the library to the pages that feed a given Vibe Bucket
+      shelf. The <b>Custom</b> library is
       the shared home for pieces that live outside Figma — <b>⬆ upload</b> or
       drag &amp; drop screenshots, exports and references there (everyone
       sees them; remove your own with ✕) and pick them like any other
@@ -437,15 +440,41 @@ const AUTO_SHELF={
   "certificate":"Academy & Certificate",
   "webinar presentation":"Webinar","webinars":"Webinar","webinar":"Webinar",
   "bell illustration":"Brand Refs & Illustration","badges":"Brand Refs & Illustration",
-  "brand assets & resource pack":"Brand Refs & Illustration",
+  "product video intro / outro / cards":"Video & Motion",
+  "video elements old":"Video & Motion","memory video":"Video & Motion",
+  "press release":"Press & PR","brand assets & resource pack":"Press & PR",
+  "comparison page":"Comparison & Competitive","alternatives":"Comparison & Competitive",
+  "roi calculator":"Sales Tools","lp calculator pop-up":"Sales Tools",
 };
+function pageShelf(page){
+  return AUTO_SHELF[String(page||"").trim().toLowerCase()] || "";
+}
 function autoShelf(id){
   const ql=qlookup(id);
   if(!ql || ql.fs.custom) return "";
-  const label=AUTO_SHELF[String(ql.page||"").trim().toLowerCase()];
+  const label=pageShelf(ql.page);
   if(!label) return "";
   const c=cats().find(x=>String(x[1]).toLowerCase()===label.toLowerCase());
   return c ? c[0] : "";
+}
+/* Library-side shelf filter: browse Point A by the shelf its pages feed.
+   Options carry counts for the active file; pages with no mapping (mixed,
+   web, process) are reachable only via "All shelves". */
+function renderShelfFilter(){
+  const sel=$("#shelffilter"); if(!sel) return;
+  const prev=sel.value;
+  const counts={};
+  for(const c of state.cards){ const l=pageShelf(c.page); if(l) counts[l]=(counts[l]||0)+1; }
+  sel.innerHTML="";
+  const o0=document.createElement("option"); o0.value=""; o0.textContent="All shelves";
+  sel.appendChild(o0);
+  const ordered=cats().map(c=>c[1]).filter(l=>counts[l]);
+  for(const l of Object.keys(counts)) if(!ordered.includes(l)) ordered.push(l);
+  for(const l of ordered){
+    const o=document.createElement("option"); o.value=l;
+    esc(o, `${l} · ${counts[l]}`); sel.appendChild(o);
+  }
+  sel.value = ordered.includes(prev) ? prev : "";
 }
 /* Bucket ids: multi-file sites qualify node ids as "<fileKey>~<nodeId>" so
    identical node ids in different Figma files cannot collide. */
@@ -634,6 +663,7 @@ function refreshFileUI(){
   for(const p of Object.keys(f.pageTotals)){
     const o=document.createElement("option"); o.value=p; esc(o,p); pf.appendChild(o);
   }
+  renderShelfFilter();
 }
 function setFile(i){
   if(i===state.fi) return;
@@ -777,10 +807,12 @@ function renderSidebar(){
 function applyFilter(){
   const q = $("#q").value.trim().toLowerCase();
   const pf = $("#pagefilter").value;
+  const sf = $("#shelffilter") ? $("#shelffilter").value : "";
   const hp = $("#hidepicked").checked;
   state.filtered = state.cards.map((c,i)=>i).filter(i=>{
     const c = state.cards[i];
     if(pf && c.page!==pf) return false;
+    if(sf && pageShelf(c.page)!==sf) return false;
     if(hp && (state.picks[qid(c.id)] || c.members.some(m=>state.picks[qid(m.id)]))) return false;
     if(q && !(c.name.toLowerCase().includes(q) || c.page.toLowerCase().includes(q))) return false;
     return true;
@@ -1475,6 +1507,7 @@ $("#tabBucket").onclick=()=>setTab("bucket");
 $("#q").oninput=()=>applyFilter();
 $("#hidepicked").onchange=()=>applyFilter();
 $("#pagefilter").onchange=()=>applyFilter();
+$("#shelffilter").onchange=()=>{ setTab("lib"); applyFilter(); };
 $("#whochip").onclick=()=>{ $("#nameinput").value=state.who; $("#namemodal").classList.add("show");
   $("#nameinput").focus(); };
 function saveName(){
