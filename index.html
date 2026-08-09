@@ -4,7 +4,7 @@
 <title>Synthflow Asset Picker</title>
 <style>
   :root { --bg:#111214; --panel:#1a1c1f; --line:#2a2d31; --txt:#e8e8ea; --dim:#8b8f96;
-          --pick:#46c270; --acc:#8ab4ff; --lime:#b5ff90; --danger:#ea4a4b; }
+          --pick:#46c270; --acc:#8ab4ff; --lime:#b5ff90; --danger:#ea4a4b; --star:#ffd166; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--txt); height:100vh;
          display:flex; flex-direction:column;
@@ -130,6 +130,15 @@
                  border-radius:6px; padding:3px 6px; font-size:12px; outline:none; width:100%; }
   .rmbtn { border:1px solid var(--line); background:none; color:var(--danger);
            border-radius:7px; padding:3px 10px; cursor:pointer; font-size:12px; }
+  .finbtn { border:1px solid var(--line); background:none; color:var(--dim);
+            border-radius:7px; padding:3px 8px; cursor:pointer; font-size:12px; }
+  .finbtn:hover { border-color:var(--star); color:var(--star); }
+  .finbtn.on { background:var(--star); border-color:var(--star); color:#221a04; font-weight:700; }
+  .card .finflag { position:absolute; top:8px; right:8px; background:var(--star); color:#221a04;
+                   font-size:11px; font-weight:700; padding:1px 7px; border-radius:9px;
+                   pointer-events:none; }
+  .bbar button.on { border-color:var(--star); color:var(--star); }
+  .ccard .cn .fin { color:var(--star); font-weight:600; }
   .dlbtn { border:1px solid var(--line); background:none; color:var(--acc);
            border-radius:7px; padding:3px 8px; cursor:pointer; font-size:12px; }
   .dlbtn:hover { border-color:var(--acc); }
@@ -257,6 +266,7 @@
     <button class="dlbtn" id="lbdl" title="Download at the highest available quality"
       aria-label="Download this asset">⬇</button>
     <button class="pickbtn" id="lbpick">Add to bucket</button>
+    <button class="finbtn" id="lbfin" title="Promote to final">☆</button>
     <button id="lbclose" title="Close">&times;</button>
   </div>
   <div id="lbcats"></div>
@@ -312,12 +322,18 @@
       and <kbd>→</kbd> dives in). <kbd>Space</kbd> picks the highlighted card and <b>hide
       picked</b> keeps your sweep clean.</p>
 
-    <h3>The Vibe Bucket</h3>
-    <p>The shared pool. Grouped by category, consensus first. The category row
-      on top is shared and editable — <b>＋</b> adds, <b>✎</b> renames,
-      <b>✕</b> deletes a category (its picks move to Uncategorized) — and
-      <b>dragging any card onto a category</b> re-files it for everyone;
-      clicking a category jumps to its section. Remove your own
+    <h3>The Vibe Bucket — from candidates to finals</h3>
+    <p>The shared pool, and the funnel from the raw libraries to ready-to-use
+      assets. The category row on top is shared and editable — <b>＋</b> adds,
+      <b>✎</b> renames, <b>✕</b> deletes a category (its picks move to
+      Uncategorized) — and <b>dragging any card onto a category</b> re-files
+      it for everyone; clicking a category jumps to its section. Picks from
+      unambiguous library pages file themselves into the matching category
+      when you pick (re-file any time); <b>▶ Sort unfiled</b> zooms through
+      the rest — a category key files each one and advances. Every pick is a
+      <i>candidate</i>: press <b>☆</b> to promote the keepers to <b>★ final</b>,
+      and <b>★ Final only</b> turns the bucket into the shelf of ready-to-use
+      assets. Remove your own
       picks any time; <b>✕ all</b> clears an item for everyone (it asks
       first); re-categorize in zoom. Each card's <b>⬇</b> downloads that
       asset at the highest available quality — uploads at original quality,
@@ -348,7 +364,8 @@ const state = { fileset:[], fi:0, qualify:false,
                 lb:{ci:-1, idx:0}, pageTotals:{},
                 staticCfg:null, localPicks:{}, localRm:{}, apiBase:"", cursor:-1,
                 focus:"grid", sideCursor:0, libJson:"", refreshing:false,
-                categories:[], catsJson:"", catsLive:false, hotmap:{}, dragId:null };
+                categories:[], catsJson:"", catsLive:false, hotmap:{}, dragId:null,
+                finalOnly:localStorage.getItem("picker_finalonly")==="1", triage:null };
 /* apiBase: "" = same-origin live server; "<url>" = remote live bucket;
    null = no live backend — picks queue locally and ship via GitHub issue. */
 function queueMode(){ return state.staticCfg && state.apiBase===null; }
@@ -375,6 +392,61 @@ function effCat(id){ const c=state.picks[id].cat||"";
 const HOTCHARS="1234567890qwe";
 function hotkeyFor(i){ return i<HOTCHARS.length ? HOTCHARS[i] : ""; }
 function canEditCats(){ return state.catsLive; }
+/* Gate 1 helper: picks made with no armed category auto-file by their source
+   Figma page. Only unambiguous single-format pages are listed — mixed
+   campaign/working pages deliberately land unfiled for triage. Targets are
+   shelf LABELS resolved against the live list at pick time, so the map is a
+   silent no-op until (or unless) a matching shelf exists. */
+const AUTO_SHELF={
+  "blog thumbnails":"Blog & OG Cover","blog thumbnail guidelines":"Blog & OG Cover",
+  "newsroom & thumbnails":"Blog & OG Cover","media center thumbnails":"Blog & OG Cover",
+  "changelog":"Changelog",
+  "ccw las vegas meeting rollup":"Event & Booth","contactio conference":"Event & Booth",
+  "ccw berlin":"Event & Booth","ccw las vegas booth":"Event & Booth",
+  "cce backwall":"Event & Booth","las vegas booth":"Event & Booth",
+  "vivatech booth header":"Event & Booth","channel conference refresh 2026":"Event & Booth",
+  "ccw demo page":"Event & Booth","open ai event assets":"Event & Booth",
+  "ccw amsterdam":"Event & Booth","accelerate tomorrow ai booth":"Event & Booth",
+  "calendar":"Event & Booth","events":"Event & Booth",
+  "merch ideas":"Event & Booth","hackathon cheque":"Event & Booth",
+  "series a board":"Investor & Roadmap","series a storyboard hakob":"Investor & Roadmap",
+  "2026 roadmap":"Investor & Roadmap",
+  "profile photo + banner":"Social & LinkedIn Post","iso campaign":"Social & LinkedIn Post",
+  "june campaign":"Social & LinkedIn Post","old ads and illustrations":"Social & LinkedIn Post",
+  "🎨 ads and illustrations":"Social & LinkedIn Post","ad page":"Social & LinkedIn Post",
+  "email templates":"Email & Newsletter","email signature":"Email & Newsletter",
+  "whatsapp integration":"Integration & Partner","zoom":"Integration & Partner",
+  "8x8":"Integration & Partner","integrations":"Integration & Partner",
+  "ringcentral":"Integration & Partner","salesforce":"Integration & Partner",
+  "🟢 whatsapp integration":"Integration & Partner","claude marketplace":"Integration & Partner",
+  "marketplace":"Integration & Partner","partner badge":"Integration & Partner",
+  "channel partnership":"Integration & Partner","🟢 partners":"Integration & Partner",
+  "partners network page":"Integration & Partner","partners [new]":"Integration & Partner",
+  "hakob slush deck":"Deck Slides","hakob ccw berlin deck":"Deck Slides",
+  "sales deck hakob / sassun":"Deck Slides","consuelo deck":"Deck Slides",
+  "marketing brand deck":"Deck Slides","▶️  slides":"Deck Slides",
+  "labs report 1":"One-Pager & Whitepaper","prism report page":"One-Pager & Whitepaper",
+  "whitepaper 05 / 6 ai predictions":"One-Pager & Whitepaper",
+  "whitepaper 04 / bell framework":"One-Pager & Whitepaper",
+  "whitepaper 06 + 07 / choosing ai agents":"One-Pager & Whitepaper",
+  "whitepaper":"One-Pager & Whitepaper","sales materials & one-pagers":"One-Pager & Whitepaper",
+  "freshworks case study":"Customer Story","freshworks":"Customer Story",
+  "batteries plus storyboard":"Customer Story","success stories":"Customer Story",
+  "customer stories & menu":"Customer Story",
+  "academy templates":"Academy & Certificate","academy":"Academy & Certificate",
+  "certificate":"Academy & Certificate",
+  "webinar presentation":"Webinar","webinars":"Webinar","webinar":"Webinar",
+  "bell illustration":"Brand Refs & Illustration","badges":"Brand Refs & Illustration",
+  "brand assets & resource pack":"Brand Refs & Illustration",
+};
+function autoShelf(id){
+  const ql=qlookup(id);
+  if(!ql || ql.fs.custom) return "";
+  const label=AUTO_SHELF[String(ql.page||"").trim().toLowerCase()];
+  if(!label) return "";
+  const c=cats().find(x=>String(x[1]).toLowerCase()===label.toLowerCase());
+  return c ? c[0] : "";
+}
 /* Bucket ids: multi-file sites qualify node ids as "<fileKey>~<nodeId>" so
    identical node ids in different Figma files cannot collide. */
 function qid(nodeId, fileKey){ return state.qualify ? `${fileKey||F().key}~${nodeId}` : nodeId; }
@@ -602,7 +674,7 @@ async function refreshPicks(force){
       p={};
       for(const id in shared){ const ql=qlookup(id); if(!ql) continue;
         p[id]={img:ql.img,name:ql.name,page:ql.page, cat:shared[id].cat||"",
-               pickers:{...(shared[id].pickers||{})}}; }
+               fin:shared[id].fin, pickers:{...(shared[id].pickers||{})}}; }
       let changed=false;
       for(const id of Object.keys(state.localPicks)){
         const lp=state.localPicks[id], ql=qlookup(id);
@@ -849,6 +921,9 @@ function submitPicks(){
 }
 
 async function doPick(id, action, cat){
+  if((action==="final"||action==="unfinal") && queueMode()){
+    toast("Promoting needs the live backend"); return;
+  }
   if(queueMode()){
     if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); return; }
     if(action==="remove"){
@@ -871,6 +946,8 @@ async function doPick(id, action, cat){
     toast(action==="remove" ? "Removed your pick" :
           action==="clear"  ? "Removed for everyone" :
           action==="recat"  ? "→ "+(catLabel(cat)||"no category") :
+          action==="final"  ? "★ Promoted to final" :
+          action==="unfinal"? "Back to candidate" :
           cat ? "Added → "+catLabel(cat) : "Added to bucket");
     await refreshPicks();
   } else toast("Pick failed");
@@ -882,17 +959,36 @@ function togglePick(id){
   const it = state.picks[id];
   if(it && it.pickers[state.who]) return doPick(id,"remove");
   if(it) return doPick(id,"add",effCat(id));   // joining keeps a *known* category
-  doPick(id,"add",activeCat());
+  doPick(id,"add",activeCat() || autoShelf(id));   // gate 1: auto-file by source page
 }
 
 function lbCur(){
   const c=state.cards[state.lb.ci]; if(!c) return null;
   return c.members[state.lb.idx] || {id:c.id, img:c.img, name:c.name};
 }
-function lbAssign(k){
+async function lbAssign(k){
   if(!state.who){ $("#namemodal").classList.add("show"); $("#nameinput").focus(); return; }
   const m=lbCur(); if(!m) return;
-  doPick(qid(m.id), state.picks[qid(m.id)] ? "recat" : "add", k);
+  await doPick(qid(m.id), state.picks[qid(m.id)] ? "recat" : "add", k);
+  if(state.triage) triageAdvance();
+}
+/* Triage mode: zoom through every unfiled bucket pick; filing one (hotkey,
+   chip, or drag later) advances to the next until the pile is empty. */
+function unfiledIds(){ return Object.keys(state.picks).filter(id=>!effCat(id)); }
+function startTriage(){
+  const q=unfiledIds(); if(!q.length) return;
+  state.triage={queue:q, pos:0};
+  openLightboxById(q[0]);
+  toast(`Sorting ${q.length} unfiled — category keys or chips file & advance · Esc exits`);
+}
+function triageAdvance(){
+  if(!state.triage) return;
+  const q=unfiledIds();
+  if(!q.length){ state.triage=null; closeLightbox();
+    toast("All filed ✓"); if(state.tab==="bucket") renderBucket(); return; }
+  state.triage.queue=q;
+  state.triage.pos=Math.min(state.triage.pos, q.length-1);
+  openLightboxById(q[state.triage.pos]);
 }
 function navList(){
   const list = state.filtered.includes(state.lb.ci)
@@ -900,6 +996,11 @@ function navList(){
   return {list, pos:list.indexOf(state.lb.ci)};
 }
 function navCard(dir){
+  if(state.triage){                        // arrows walk the unfiled queue
+    const np=state.triage.pos+dir;
+    if(np<0||np>=state.triage.queue.length) return;
+    state.triage.pos=np; openLightboxById(state.triage.queue[np]); return;
+  }
   const {list,pos}=navList(); if(pos<0) return;
   const np=pos+dir; if(np<0||np>=list.length) return;
   openLightbox(list[np],0);
@@ -924,12 +1025,14 @@ function openLightboxById(id){
   }
   openLightbox(ql.ci, ql.mi);
 }
-function closeLightbox(){ $("#lightbox").classList.remove("show"); }
+function closeLightbox(){ state.triage=null; $("#lightbox").classList.remove("show"); }
 function renderLightbox(){
   const c=state.cards[state.lb.ci]; if(!c) return;
   const m=lbCur();
   const {list,pos}=navList();
-  $("#lbcount").textContent = `${pos+1}/${list.length}` +
+  $("#lbcount").textContent =
+    (state.triage ? `sorting ${state.triage.pos+1}/${state.triage.queue.length} unfiled · ` : "") +
+    `${pos+1}/${list.length}` +
     (c.members.length>1 ? ` · dupe ${state.lb.idx+1}/${c.members.length}` : "");
   $("#lbprev").disabled = pos<=0;
   $("#lbnext").disabled = pos>=list.length-1;
@@ -945,6 +1048,15 @@ function renderLightbox(){
   pb.textContent = it ? (mine?"In bucket ✓ (remove)":"In bucket ✓ (add my pick)") : "+ Add to bucket";
   pb.classList.toggle("on", !!it);
   pb.onclick=()=>togglePick(qid(m.id));
+  const fb=$("#lbfin");
+  fb.style.display = (it && !queueMode()) ? "" : "none";
+  if(it && !queueMode()){
+    fb.classList.toggle("on", !!it.fin);
+    fb.textContent = it.fin ? "★" : "☆";
+    fb.title = it.fin ? "Final — promoted by "+Object.keys(it.fin).join(", ")+" · click to demote"
+                      : "Promote to final — marks this ready to use";
+    fb.onclick=()=>doPick(qid(m.id), it.fin ? "unfinal" : "final");
+  }
   $("#lbdl").onclick=()=>downloadAsset(qid(m.id), {name:m.name||c.name});
   const box=$("#lbimg"); box.innerHTML="";
   if(m.src || m.img){ const im=document.createElement("img");
@@ -1019,6 +1131,19 @@ function bucketItemCard(id, it){
     {img:it.img, src:it.src, name:it.name, page:it.page, noFig:!!(ql&&ql.fs.custom)},
     ()=>openLightboxById(id));
   card.classList.add("picked");
+  if(it.fin){ const ff=document.createElement("span"); ff.className="finflag";
+    ff.textContent="★ final"; card.appendChild(ff); }
+  /* gate 2: promote to final / back to candidate (live backend only) */
+  if(!queueMode()){
+    const fb=document.createElement("button"); fb.className="finbtn"+(it.fin?" on":"");
+    fb.textContent=it.fin ? "★" : "☆";
+    fb.title=it.fin
+      ? "Final — promoted by "+Object.keys(it.fin).join(", ")+" · click to demote"
+      : "Promote to final — marks this ready to use";
+    fb.setAttribute("aria-label",(it.fin?"Demote":"Promote")+" "+(it.name||"asset"));
+    fb.onclick=()=>doPick(id, it.fin ? "unfinal" : "final");
+    meta.appendChild(fb);
+  }
   /* drag a bucket card onto a strip category to re-file it */
   card.draggable=true;
   const im=card.querySelector(".thumbwrap img");
@@ -1091,7 +1216,7 @@ function stripEdit(card, id, current){
   const done=commit=>{
     if(closed) return; closed=true;
     inp.onblur=null; inp.blur();       // release focus so re-renders are not skipped
-    const label=inp.value.replace(/[<>&"]/g,"").trim().slice(0,40);
+    const label=inp.value.replace(/[<>"]/g,"").trim().slice(0,40);
     if(commit && label && label!==current)
       editCats(id ? {action:"rename", id, label} : {action:"add", label});
     else if(state.tab==="bucket") renderBucket();
@@ -1107,13 +1232,16 @@ function stripEdit(card, id, current){
    also editable (add / rename / delete) for everyone. */
 function catStrip(){
   const strip=document.createElement("div"); strip.id="catstrip";
-  const counts={};
-  for(const id in state.picks){ const g=effCat(id); counts[g]=(counts[g]||0)+1; }
+  const counts={}, fins={};
+  for(const id in state.picks){ const g=effCat(id); counts[g]=(counts[g]||0)+1;
+    if(state.picks[id].fin) fins[g]=(fins[g]||0)+1; }
   const mkCard=(cid, label, hot)=>{
     const c=el("ccard"); c.dataset.cat=cid;
     c.appendChild(el("cl", label));
     const cn=el("cn");
-    const n=counts[cid]||0;
+    const n=counts[cid]||0, f=fins[cid]||0;
+    if(f){ const fs=document.createElement("span"); fs.className="fin";
+      fs.textContent="★"+f; cn.appendChild(fs); }
     cn.appendChild(document.createTextNode(n===1 ? "1 pick" : n+" picks"));
     if(hot){ const kb=document.createElement("kbd"); kb.textContent=hot.toUpperCase();
       cn.appendChild(kb); }
@@ -1167,21 +1295,37 @@ function renderBucket(){
   strip.scrollLeft=stripScroll;          // polls must not yank the strip back
   const bar=el("bbar");
   const ids=Object.keys(state.picks);
+  const unfiled=ids.filter(id=>!effCat(id));
   if(ids.length){
     const cp=document.createElement("button"); cp.textContent="Copy Figma links";
     cp.onclick=copyFigmaLinks; bar.appendChild(cp);
     const dl=document.createElement("button"); dl.textContent="⬇ Download moodboard";
     dl.onclick=downloadMoodboard; bar.appendChild(dl);
+    if(unfiled.length && !queueMode()){
+      const tr=document.createElement("button");
+      tr.textContent=`▶ Sort ${unfiled.length} unfiled`;
+      tr.title="Zoom through every unfiled pick — category keys/chips file it and advance";
+      tr.onclick=startTriage; bar.appendChild(tr);
+    }
+    const fo=document.createElement("button");
+    fo.textContent="★ Final only"; fo.classList.toggle("on", state.finalOnly);
+    fo.title="Show only assets promoted to final — the ready-to-use shelf view";
+    fo.onclick=()=>{ state.finalOnly=!state.finalOnly;
+      localStorage.setItem("picker_finalonly", state.finalOnly?"1":"0"); renderBucket(); };
+    bar.appendChild(fo);
   }
   v.appendChild(bar);
   if(!ids.length){ v.appendChild(el("empty","Vibe bucket is empty — pick from the libraries.")); return; }
   const latest=id=>Object.values(state.picks[id].pickers).sort().pop()||"";
   const votes=id=>Object.keys(state.picks[id].pickers).length;
+  const fin=id=>state.picks[id].fin?1:0;
   const groups=[...cats().map(c=>c[0]), ""];
+  let shown=0;
   for(const g of groups){
-    const gids=ids.filter(id=>effCat(id)===g)
-                  .sort((a,b)=> votes(b)-votes(a) || latest(b).localeCompare(latest(a)));
+    const gids=ids.filter(id=>effCat(id)===g && (!state.finalOnly || fin(id)))
+                  .sort((a,b)=> fin(b)-fin(a) || votes(b)-votes(a) || latest(b).localeCompare(latest(a)));
     if(!gids.length) continue;
+    shown+=gids.length;
     const h=el("bhead", g ? catLabel(g) : "Uncategorized"); h.id="bg-"+(g||"uncat");
     const n=document.createElement("span"); n.className="n"; n.textContent=` · ${gids.length}`;
     h.appendChild(n);
@@ -1190,6 +1334,8 @@ function renderBucket(){
     for(const id of gids) grid.appendChild(bucketItemCard(id, state.picks[id]));
     v.appendChild(grid);
   }
+  if(!shown && state.finalOnly)
+    v.appendChild(el("empty","No finals yet — open a shelf and promote the keepers with ★."));
 }
 
 /* Uploads land in the shared Custom library (needs the live Worker). */
@@ -1223,7 +1369,8 @@ function copyFigmaLinks(){
   const lines=[];
   const groups=[...cats().map(c=>c[0]), ""];
   for(const g of groups){
-    const gids=Object.keys(state.picks).filter(id=>effCat(id)===g);
+    const gids=Object.keys(state.picks)
+      .filter(id=>effCat(id)===g && (!state.finalOnly || state.picks[id].fin));
     if(!gids.length) continue;
     lines.push(`## ${g?catLabel(g):"Uncategorized"}`);
     for(const id of gids){
@@ -1254,8 +1401,10 @@ async function downloadMoodboard(){
   const groups=[...cats().map(c=>c[0]), ""];
   let cards="";
   for(const g of groups){
-    const gids=Object.keys(state.picks).filter(id=>effCat(id)===g)
-      .sort((a,b)=>Object.keys(state.picks[b].pickers).length-Object.keys(state.picks[a].pickers).length);
+    const gids=Object.keys(state.picks)
+      .filter(id=>effCat(id)===g && (!state.finalOnly || state.picks[id].fin))
+      .sort((a,b)=>(state.picks[b].fin?1:0)-(state.picks[a].fin?1:0)
+        || Object.keys(state.picks[b].pickers).length-Object.keys(state.picks[a].pickers).length);
     if(!gids.length) continue;
     cards+=`<h2>${eschtml(g?catLabel(g):"Uncategorized")} · ${gids.length}</h2><div class="grid">`;
     for(const id of gids){
@@ -1265,12 +1414,13 @@ async function downloadMoodboard(){
       const {key,nid}=parseQid(id);
       const link=key==="custom"?"":`<a href="${figURL(nid,key)}">Figma ↗</a>`;
       cards+=`<figure>${src?`<img src="${src}">`:"<div class=noimg>no image</div>"}
-        <figcaption><b>${eschtml(it.name)}</b> · ${eschtml(it.page)}
+        <figcaption>${it.fin?"★ ":""}<b>${eschtml(it.name)}</b> · ${eschtml(it.page)}
         · ${eschtml(Object.keys(it.pickers).join(", "))} ${link}</figcaption></figure>`;
     }
     cards+="</div>";
   }
-  const html=`<!doctype html><meta charset="utf-8"><title>Synthflow Vibe Bucket</title>
+  const title="Synthflow Vibe Bucket"+(state.finalOnly?" — finals":"");
+  const html=`<!doctype html><meta charset="utf-8"><title>${title}</title>
 <style>body{font:14px -apple-system,sans-serif;background:#111214;color:#e8e8ea;padding:30px}
 h1{font-size:20px}h2{font-size:15px;color:#8ab4ff;border-bottom:1px solid #2a2d31;padding-bottom:6px;margin-top:30px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
@@ -1278,7 +1428,7 @@ figure{margin:0;background:#1a1c1f;border:1px solid #2a2d31;border-radius:10px;o
 img{width:100%;display:block;background:#0c0d0e}
 figcaption{padding:8px 10px;font-size:12px;color:#8b8f96}figcaption b{color:#e8e8ea}
 a{color:#8ab4ff;text-decoration:none}.noimg{padding:30px;text-align:center;color:#8b8f96}</style>
-<h1>Synthflow Vibe Bucket — ${new Date().toISOString().slice(0,10)}</h1>${cards}`;
+<h1>${title} — ${new Date().toISOString().slice(0,10)}</h1>${cards}`;
   const blob=new Blob([html],{type:"text/html"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   a.download=`vibe-bucket-${new Date().toISOString().slice(0,10)}.html`;
@@ -1300,7 +1450,8 @@ function foot(){
     if(queueMode()) f.appendChild(hint("Submit","opens a GitHub issue with your picks"));
   } else {
     f.appendChild(hint("drag","a card onto a category above to re-file it"));
-    f.appendChild(hint("click thumb","zoom + re-categorize"));
+    f.appendChild(hint("☆→★","promote the keepers · ★ Final only = the ready-to-use view"));
+    f.appendChild(hint("▶ Sort","zoom through unfiled picks — a category key files & advances"));
     f.appendChild(hint("remove / ✕ all","take your pick back · clear for everyone"));
     f.appendChild(hint("⬇","on a card: that asset, best quality · in the bar: the whole moodboard"));
     if(canEditCats())
