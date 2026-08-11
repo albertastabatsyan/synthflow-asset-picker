@@ -56,15 +56,15 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
     <div style="display:flex;align-items:center;gap:9px">
       <div style="width:10px;height:10px;border-radius:3px;background:oklch(0.55 0.17 262);transform:rotate(45deg)"></div>
       <div style="font-size:14.5px;font-weight:700;letter-spacing:-.01em;white-space:nowrap">Asset Picker</div>
-      <sc-if value="{{wide}}" hint-placeholder-val="{{ true }}"><div style="font-size:11px;color:#6f737c;font-weight:500;margin-top:1px;white-space:nowrap">SYNTHFLOW</div></sc-if>
+      <sc-if value="{{wide}}" hint-placeholder-val="{{ true }}"><div style="font-size:11px;color:#80848d;font-weight:500;margin-top:1px;white-space:nowrap">SYNTHFLOW</div></sc-if>
     </div>
     <nav aria-label="Views" style="display:flex;background:rgba(232,232,234,.06);border:1px solid rgba(232,232,234,.1);border-radius:4px;padding:3px;gap:2px">
       <sc-for list="{{navTabs}}" as="t" hint-placeholder-count="3">
-        <button onClick="{{t.go}}" aria-current="{{t.cur}}" style="border:0;background:{{t.bg}};color:{{t.fg}};border-radius:4px;padding:{{tabPad}};font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;min-height:{{ctlH}}px">{{t.label}}<sc-if value="{{t.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;background:transparent;border:1px solid oklch(0.45 0.09 262);color:#8ab4ff;border-radius:4px;padding:1px 6px;font-weight:600">{{t.badge}}</span></sc-if></button>
+        <button onClick="{{t.go}}" aria-current="{{t.cur}}" style="border:0;background:{{t.bg}};color:{{t.fg}};border-radius:4px;padding:{{tabPad}};font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;min-height:{{ctlH}}px">{{t.label}}<sc-if value="{{t.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:transparent;border:1px solid oklch(0.45 0.09 262);color:#8ab4ff;border-radius:4px;padding:1px 6px;font-weight:600">{{t.badge}}</span></sc-if></button>
       </sc-for>
     </nav>
     <div style="flex:1;min-width:8px"></div>
-    <div title="{{syncTitle}}" tabIndex="0" role="note" aria-label="{{syncTitle}}" style="display:flex;align-items:center;gap:7px;border:1px solid rgba(232,232,234,.12);background:rgba(232,232,234,.05);border-radius:4px;padding:5px 12px;min-height:30px">
+    <div title="{{syncTitle}}" tabIndex="0" role="note" aria-label="{{syncTitle}}" style="display:flex;align-items:center;gap:7px;border:1px solid rgba(232,232,234,.18);background:rgba(232,232,234,.05);border-radius:4px;padding:5px 12px;min-height:30px">
       <span style="width:8px;height:8px;border-radius:50%;background:{{syncDot}};flex:none"></span>
       <span style="font-size:11.5px;font-weight:600;color:#8b8f96;white-space:nowrap">{{syncLabel}}</span>
     </div>
@@ -76,7 +76,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
 
   <sc-if value="{{loadErr}}" hint-placeholder-val="{{ false }}">
     <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px">
-      <div style="background:#1e2125;border:1px solid rgba(232,232,234,.12);border-radius:4px;padding:26px 28px;max-width:440px;text-align:center">
+      <div style="background:#1e2125;border:1px solid rgba(232,232,234,.18);border-radius:4px;padding:26px 28px;max-width:440px;text-align:center">
         <div style="font-size:15px;font-weight:700;margin-bottom:6px">Couldn't load the source libraries</div>
         <div style="font-size:12.5px;color:#8b8f96;margin-bottom:16px">The two Figma library indexes didn't load. Check your connection — nothing was lost.</div>
         <button onClick="{{retryLoad}}" style="background:oklch(0.55 0.17 262);border:0;color:#fff;border-radius:4px;padding:10px 22px;font-size:13px;font-weight:700;min-height:44px">Retry</button>
@@ -93,13 +93,13 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
   <main data-screen-label="Ready" style="flex:1;display:flex;min-height:0">
     <sc-if value="{{wide}}" hint-placeholder-val="{{ true }}">
       <nav aria-label="Needs" style="width:250px;flex:none;border-right:1px solid rgba(232,232,234,.1);display:flex;flex-direction:column;min-height:0;background:#17191c">
-        <div style="flex:none;font-size:10px;font-weight:700;letter-spacing:.09em;color:#80848d;padding:14px 18px 6px">NEEDS</div>
+        <div style="flex:none;font-size:11px;font-weight:700;letter-spacing:.09em;color:#80848d;padding:14px 18px 6px">NEEDS</div>
         <div style="flex:1;overflow-y:auto;padding:0 10px 10px;min-height:0">
           <sc-for list="{{needRows}}" as="nr" hint-placeholder-count="8">
             <button onClick="{{nr.go}}" aria-current="{{nr.cur}}" title="{{nr.tip}}" style="display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:{{nr.bg}};border-radius:4px;padding:6px 9px;margin-bottom:1px;cursor:pointer;min-height:30px">
               <span aria-hidden="true" style="width:7px;height:7px;border-radius:50%;background:{{nr.dot}};flex:none"></span>
               <span style="flex:1;font-size:12.5px;font-weight:{{nr.wt}};color:{{nr.fg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{nr.label}}</span>
-              <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:{{nr.ctFg}}">{{nr.ct}}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{nr.ctFg}}">{{nr.ct}}</span>
             </button>
           </sc-for>
         </div>
@@ -112,7 +112,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
       <div style="flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 16px;border-bottom:1px solid rgba(232,232,234,.08)">
         <div style="flex:none;min-width:0">
           <h1 style="font-size:13.5px;font-weight:700;margin:0">{{readyTitle}}</h1>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80848d">{{readySub}}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">{{readySub}}</div>
         </div>
         <div style="flex:1;min-width:8px"></div>
         <sc-if value="{{narrow}}" hint-placeholder-val="{{ false }}">{{needSelectEl}}<button onClick="{{newNeed}}" style="border:1px dashed rgba(232,232,234,.3);background:transparent;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#8b8f96;min-height:{{ctlH}}px;white-space:nowrap">＋ Need</button></sc-if>
@@ -121,7 +121,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
       <sc-if value="{{needHead}}" hint-placeholder-val="{{ false }}">
         <div style="flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:9px 16px;border-bottom:1px solid rgba(232,232,234,.08);background:#17191c">
           <sc-for list="{{covChips}}" as="cc" hint-placeholder-count="2">
-            <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;color:{{cc.fg}};background:{{cc.bg}};border:1px solid {{cc.line}};border-radius:4px;padding:3px 10px">{{cc.txt}}</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:{{cc.fg}};background:{{cc.bg}};border:1px solid {{cc.line}};border-radius:4px;padding:3px 10px">{{cc.txt}}</span>
           </sc-for>
           <sc-if value="{{needHeadHasNote}}" hint-placeholder-val="{{ false }}">
             <span style="font-size:12px;color:#8b8f96;max-width:520px">{{needHeadNote}}</span>
@@ -144,11 +144,11 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <sc-for list="{{readySections}}" as="sec" hint-placeholder-count="2">
           <section style="margin-bottom:28px">
             <sc-if value="{{sec.hasHead}}" hint-placeholder-val="{{ true }}">
-              <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;border-bottom:1px solid rgba(232,232,234,.12);padding-bottom:8px;margin-bottom:10px">
+              <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;border-bottom:1px solid rgba(232,232,234,.18);padding-bottom:8px;margin-bottom:10px">
                 <h2 style="font-size:14px;font-weight:700;margin:0">{{sec.label}}</h2>
-                <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80848d">{{sec.spec}}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">{{sec.spec}}</span>
                 <sc-if value="{{sec.hasCov}}" hint-placeholder-val="{{ false }}">
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:{{sec.covFg}}">{{sec.covTxt}}</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{sec.covFg}}">{{sec.covTxt}}</span>
                 </sc-if>
               </div>
             </sc-if>
@@ -168,18 +168,20 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
             </sc-if>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:12px">
               <sc-for list="{{sec.items}}" as="c" hint-placeholder-count="3">
-                <div style="background:#1e2125;border:1px solid rgba(232,232,234,.12);border-radius:4px;overflow:hidden;display:flex;flex-direction:column" style-hover="border-color:rgba(232,232,234,.32)">
+                <div style="background:#1e2125;border:1px solid rgba(232,232,234,.18);border-radius:4px;overflow:hidden;display:flex;flex-direction:column" style-hover="border-color:rgba(232,232,234,.32)">
                   <button onClick="{{c.open}}" aria-label="{{c.aria}}" style="border:0;background:transparent;display:block;padding:0;cursor:zoom-in;width:100%">
-                    <span style="position:relative;display:flex;width:100%;aspect-ratio:4/3;background:#e9ebee;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid rgba(232,232,234,.08)">
+                    <span style="position:relative;display:flex;width:100%;aspect-ratio:4/3;background:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid rgba(232,232,234,.08)">
                       <img src="{{c.img}}" alt="" loading="lazy" draggable="{{false}}" onError="{{imgErr}}" style="max-width:100%;max-height:100%;object-fit:contain;display:block">
-                      <sc-if value="{{c.offspec}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:7px;left:7px;background:#f6ecd2;border:1.5px solid #ffd166;color:#6e5504;font-size:9.5px;font-weight:700;border-radius:4px;padding:2px 8px">OFF-SPEC {{c.dims}}</span></sc-if>
-                      <sc-if value="{{c.local}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:7px;left:7px;background:rgba(17,18,20,.06);border:1px solid rgba(17,18,20,.14);color:#575c64;font-size:9.5px;font-weight:700;border-radius:4px;padding:2px 8px">UPLOAD</span></sc-if>
+                      <sc-if value="{{c.offspec}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:7px;left:7px;background:#f6ecd2;border:1.5px solid #ffd166;color:#6e5504;font-size:11px;font-weight:700;border-radius:4px;padding:2px 8px">OFF-SPEC {{c.dims}}</span></sc-if>
+                      <sc-if value="{{c.local}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:7px;left:7px;background:rgba(17,18,20,.06);border:1px solid rgba(17,18,20,.14);color:#575c64;font-size:11px;font-weight:700;border-radius:4px;padding:2px 8px">UPLOAD</span></sc-if>
                     </span>
                   </button>
                   <div style="display:flex;flex-direction:column;gap:2px;padding:9px 11px 10px;flex:1">
                     <span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12.5px;font-weight:600;line-height:1.35">{{c.name}}</span>
                     <span style="display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:6px">
-                      <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:{{c.metaFg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{c.meta}}</span>
+                      <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:11px;color:{{c.metaFg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{c.meta}}</span>
+                      <sc-if value="{{c.hasNote}}" hint-placeholder-val="{{ false }}"><span title="{{c.note}}" aria-label="Usage note: {{c.note}}" tabIndex="0" style="flex:none;color:#ffd166;font-size:11px">ⓘ</span></sc-if>
+                      <sc-if value="{{c.hasFig}}" hint-placeholder-val="{{ false }}"><button onClick="{{c.copy}}" aria-label="{{c.copyAria}}" style="flex:none;border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;color:#c2c5cb;padding:{{btnPad}};font-size:11px;font-weight:600;min-height:{{ctlH}}px">Copy</button></sc-if>
                       <sc-if value="{{c.hasFig}}" hint-placeholder-val="{{ true }}">
                         <a href="{{c.fig}}" target="_blank" rel="noopener" aria-label="{{c.figAria}}" style="flex:none;border-radius:4px;border:1px solid oklch(0.45 0.09 262);background:transparent;color:#8ab4ff;display:flex;align-items:center;padding:{{btnPad}};font-size:11.5px;font-weight:600;text-decoration:none;min-height:{{ctlH}}px">Figma ↗</a>
                       </sc-if>
@@ -203,7 +205,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
     <div style="flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 16px;border-bottom:1px solid rgba(232,232,234,.08)">
       <div style="flex:none">
         <h1 style="font-size:13.5px;font-weight:700;margin:0">Review</h1>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80848d">{{revSub}}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">{{revSub}}</div>
       </div>
       <div style="flex:1;min-width:8px"></div>
     </div>
@@ -224,16 +226,16 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
             <span style="font-size:11.5px;color:#80848d">{{g.hint}}</span>
           </div>
           <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
-            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;background:#1e2125;border:1px solid rgba(232,232,234,.12);border-radius:4px;padding:9px 12px;margin-bottom:7px" style-hover="border-color:rgba(232,232,234,.3);background:#24211d">
-              <button onClick="{{r.open}}" aria-label="{{r.zoomAria}}" style="flex:none;width:92px;height:58px;border-radius:4px;overflow:hidden;border:1px solid rgba(232,232,234,.12);background:#e9ebee;padding:0;cursor:zoom-in">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;background:#1e2125;border:1px solid rgba(232,232,234,.18);border-radius:4px;padding:9px 12px;margin-bottom:7px" style-hover="border-color:rgba(232,232,234,.3);background:#24211d">
+              <button onClick="{{r.open}}" aria-label="{{r.zoomAria}}" style="flex:none;width:92px;height:58px;border-radius:4px;overflow:hidden;border:1px solid rgba(232,232,234,.18);background:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);padding:0;cursor:zoom-in">
                 <img src="{{r.img}}" alt="" loading="lazy" onError="{{imgErr}}" style="width:100%;height:100%;object-fit:cover;display:block">
               </button>
               <div style="flex:1;min-width:150px">
                 <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px">{{r.name}}</div>
                 <div style="font-size:11px;color:#80848d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px">{{r.src}}</div>
-                <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:{{r.fitFg}}">{{r.fitLine}}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{r.fitFg}}">{{r.fitLine}}</div>
               </div>
-              <span style="display:inline-flex;align-items:center;border:1px solid {{r.chipLine}};background:{{r.chipBg}};border-radius:4px;padding:4px 12px;font-size:11.5px;font-weight:600;color:{{r.chipFg}};white-space:nowrap;max-width:210px"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.chip}}</span></span>
+              {{r.needSel}}
               <sc-if value="{{r.hasFig}}" hint-placeholder-val="{{ false }}"><a href="{{r.fig}}" target="_blank" rel="noopener" aria-label="{{r.figAria}}" style="border:1px solid rgba(232,232,234,.16);background:transparent;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#c2c5cb;text-decoration:none;white-space:nowrap;min-height:{{ctlH}}px;display:flex;align-items:center">Figma ↗</a></sc-if>
               <button onClick="{{r.publish}}" aria-label="{{r.pubAria}}" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#fff;white-space:nowrap;min-height:{{ctlH}}px">Publish…</button>
               <button onClick="{{r.remove}}" aria-label="{{r.removeAria}}" title="Remove from Review" style="border:1px solid rgba(232,232,234,.13);background:transparent;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#ea4a4b;white-space:nowrap;min-height:{{ctlH}}px;min-width:{{ctlH}}px">✕</button>
@@ -250,32 +252,32 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
     <sc-if value="{{showRail}}" hint-placeholder-val="{{ true }}">
       <nav aria-label="Sources and pages" style="width:248px;flex:none;border-right:1px solid rgba(232,232,234,.1);display:flex;flex-direction:column;min-height:0;background:#17191c">
         <div style="flex:none;padding:12px 10px 8px;display:flex;flex-direction:column;gap:2px">
-          <div style="font-size:10px;font-weight:700;letter-spacing:.09em;color:#80848d;padding:0 8px 6px">SOURCES</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.09em;color:#80848d;padding:0 8px 6px">SOURCES</div>
           <sc-for list="{{libRows}}" as="lr" hint-placeholder-count="4">
             <button onClick="{{lr.go}}" aria-current="{{lr.curAria}}" style="display:flex;align-items:center;gap:9px;border:0;background:transparent;border-radius:4px;padding:7px 8px;text-align:left;width:100%;cursor:pointer;min-height:32px">
               <span style="width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(232,232,234,.26);flex:none;display:flex;align-items:center;justify-content:center"><sc-if value="{{lr.cur}}" hint-placeholder-val="{{ false }}"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.55 0.17 262)"></span></sc-if></span>
               <span style="flex:1;font-size:12.5px;font-weight:600;color:#e8e8ea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{lr.short}}</span>
-              <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80848d">{{lr.count}}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">{{lr.count}}</span>
             </button>
           </sc-for>
         </div>
         <sc-if value="{{hasPages}}" hint-placeholder-val="{{ true }}">
           <div style="flex:none;display:flex;align-items:center;gap:8px;padding:10px 18px 6px;border-top:1px solid rgba(232,232,234,.08)">
-            <span style="font-size:10px;font-weight:700;letter-spacing:.09em;color:#80848d">PAGES</span>
-            <input type="search" value="{{pageQ}}" onChange="{{onPageQ}}" placeholder="filter…" aria-label="Filter pages" style="flex:1;min-width:0;background:#2a2d31;border:1px solid rgba(232,232,234,.12);border-radius:4px;padding:3px 8px;font-size:11px;outline:none;min-height:26px">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.09em;color:#80848d">PAGES</span>
+            <input type="search" value="{{pageQ}}" onChange="{{onPageQ}}" placeholder="filter…" aria-label="Filter pages" style="flex:1;min-width:0;background:#2a2d31;border:1px solid rgba(232,232,234,.18);border-radius:4px;padding:3px 8px;font-size:11px;outline:none;min-height:26px">
           </div>
           <div style="flex:1;overflow-y:auto;padding:4px 10px 14px;min-height:0">
             <sc-for list="{{pageRows}}" as="p" hint-placeholder-count="12">
               <button onClick="{{p.go}}" style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;cursor:pointer;position:relative;width:100%;border:0;background:transparent;text-align:left;min-height:28px" style-hover="background:rgba(232,232,234,.06)">
                 <sc-if value="{{p.cur}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:4px;background:oklch(0.30 0.05 262);border:1px solid oklch(0.45 0.09 262);pointer-events:none"></span></sc-if>
                 <span style="position:relative;flex:1;font-size:12px;color:#c2c5cb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.name}}</span>
-                <span style="position:relative;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6f737c">{{p.ct}}</span>
+                <span style="position:relative;font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">{{p.ct}}</span>
               </button>
             </sc-for>
           </div>
         </sc-if>
         <sc-if value="{{noPages}}" hint-placeholder-val="{{ false }}">
-          <div style="flex:1;padding:14px 18px;font-size:11.5px;color:#6f737c;border-top:1px solid rgba(232,232,234,.08)">{{noPagesHint}}</div>
+          <div style="flex:1;padding:14px 18px;font-size:11.5px;color:#80848d;border-top:1px solid rgba(232,232,234,.08)">{{noPagesHint}}</div>
         </sc-if>
       </nav>
     </sc-if>
@@ -286,7 +288,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <sc-if value="{{wide}}" hint-placeholder-val="{{ true }}">
             <h1 style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;flex:none;margin:0">{{crumb}}</h1>
           </sc-if>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80848d;white-space:nowrap;flex:none">{{statLine}}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d;white-space:nowrap;flex:none">{{statLine}}</div>
           <div style="flex:1;min-width:8px"></div>
           <sc-if value="{{libFilters}}" hint-placeholder-val="{{ true }}">
             <input type="search" ref="{{libSearchRef}}" value="{{libQ}}" onChange="{{onLibQ}}" placeholder="{{libPh}}" aria-label="Search the library" style="width:190px;background:#2a2d31;border:1px solid rgba(232,232,234,.13);border-radius:4px;padding:7px 13px;font-size:12.5px;outline:none;min-height:{{ctlH}}px">
@@ -305,7 +307,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <div style="flex:none;padding:10px 16px;background:oklch(0.30 0.05 262);border-bottom:1px solid oklch(0.45 0.09 262);display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px">
           <div style="min-width:0">
             <h1 style="font-size:13px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">⌕ Gathering for {{gatherLabel}}</h1>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8b8f96">{{gatherSpec}}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8b8f96">{{gatherSpec}}</div>
           </div>
           <span style="font-size:11.5px;color:#8b8f96">Picks go to Review, assigned to this need.</span>
           <span style="flex:1;min-width:8px"></span>
@@ -327,9 +329,9 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <sc-for list="{{libSections}}" as="ls" hint-placeholder-count="1">
           <section style="margin-bottom:14px">
             <sc-if value="{{ls.hasHead}}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;border-bottom:1px solid rgba(232,232,234,.12);padding:4px 0 7px;margin-bottom:10px">
+              <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;border-bottom:1px solid rgba(232,232,234,.18);padding:4px 0 7px;margin-bottom:10px">
                 <h2 style="font-size:12.5px;font-weight:700;margin:0">{{ls.title}}</h2>
-                <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80848d">{{ls.n}}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">{{ls.n}}</span>
                 <span style="font-size:11.5px;color:#80848d">{{ls.sub}}</span>
               </div>
             </sc-if>
@@ -337,24 +339,24 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
               <div style="display:flex;gap:10px;margin-bottom:12px">
                 <sc-for list="{{row.tiles}}" as="it" hint-placeholder-count="4">
                   <div style="flex:none;width:{{it.w}}px;display:flex;flex-direction:column;gap:0;position:relative">
-                    <div role="button" tabIndex="0" aria-label="{{it.aria}}" onClick="{{it.open}}" onKeyDown="{{it.keyd}}" style="position:relative;width:100%;height:{{it.h}}px;border-radius:4px 4px 0 0;background:#e9ebee;border:1px solid rgba(232,232,234,.14);border-bottom:0;overflow:hidden;cursor:zoom-in" style-hover="border-color:rgba(232,232,234,.36)">
+                    <div role="button" tabIndex="0" aria-label="{{it.aria}}" onClick="{{it.open}}" onKeyDown="{{it.keyd}}" style="position:relative;width:100%;height:{{it.h}}px;border-radius:4px 4px 0 0;background:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);border:1px solid rgba(232,232,234,.18);border-bottom:0;overflow:hidden;cursor:zoom-in" style-hover="border-color:rgba(232,232,234,.36)">
                       <img src="{{it.img}}" alt="" loading="lazy" draggable="{{false}}" onError="{{imgErr}}" onLoad="{{it.ld}}" style="width:100%;height:100%;object-fit:cover;display:block">
                       <sc-if value="{{it.isReady}}" hint-placeholder-val="{{ false }}">
                         <div style="position:absolute;inset:0;border:2px solid #b5ff90;pointer-events:none"></div>
-                        <div style="position:absolute;bottom:6px;left:6px;background:#b5ff90;color:#1c3a10;font-size:10px;font-weight:600;border-radius:4px;padding:2px 8px;pointer-events:none;max-width:86%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.tag}}</div>
+                        <div style="position:absolute;bottom:6px;left:6px;background:#b5ff90;color:#1c3a10;font-size:11px;font-weight:600;border-radius:4px;padding:2px 8px;pointer-events:none;max-width:86%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.tag}}</div>
                       </sc-if>
                       <sc-if value="{{it.isCand}}" hint-placeholder-val="{{ false }}">
                         <div style="position:absolute;inset:0;border:2px solid oklch(0.55 0.17 262);pointer-events:none"></div>
-                        <div style="position:absolute;bottom:6px;left:6px;background:oklch(0.55 0.17 262);color:#fff;font-size:10px;font-weight:600;border-radius:4px;padding:2px 8px;pointer-events:none;max-width:86%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.tag}}</div>
+                        <div style="position:absolute;bottom:6px;left:6px;background:oklch(0.55 0.17 262);color:#fff;font-size:11px;font-weight:600;border-radius:4px;padding:2px 8px;pointer-events:none;max-width:86%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.tag}}</div>
                       </sc-if>
                     </div>
-                    <sc-if value="{{it.hasFig}}" hint-placeholder-val="{{ false }}"><a href="{{it.fig}}" target="_blank" rel="noopener" onClick="{{stopEv}}" aria-label="{{it.figAria}}" style="position:absolute;top:6px;right:6px;z-index:2;display:flex;align-items:center;background:rgba(11,12,14,.84);color:#eef0f3;border:1px solid rgba(232,232,234,.32);border-radius:4px;padding:{{pickPad}};font-size:10.5px;font-weight:700;text-decoration:none;min-height:{{pickH}}px" style-hover="background:rgba(11,12,14,.96);border-color:rgba(232,232,234,.5)">Figma ↗</a></sc-if>
+                    <sc-if value="{{it.hasFig}}" hint-placeholder-val="{{ false }}"><a href="{{it.fig}}" target="_blank" rel="noopener" onClick="{{stopEv}}" aria-label="{{it.figAria}}" style="position:absolute;top:6px;right:6px;z-index:2;display:flex;align-items:center;background:rgba(11,12,14,.84);color:#eef0f3;border:1px solid rgba(232,232,234,.32);border-radius:4px;padding:{{pickPad}};font-size:11px;font-weight:700;text-decoration:none;min-height:{{pickH}}px" style-hover="background:rgba(11,12,14,.96);border-color:rgba(232,232,234,.5)">Figma ↗</a></sc-if>
                     <div style="display:flex;align-items:center;gap:6px;border:1px solid rgba(232,232,234,.1);border-top:1px solid rgba(232,232,234,.07);border-radius:0 0 4px 4px;background:#1e2125;padding:5px 7px;min-height:{{capH}}px">
                       <div style="flex:1;min-width:0">
                         <div style="font-size:11px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3">{{it.name}}</div>
-                        <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:{{it.subFg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.sub}}</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{it.subFg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.sub}}</div>
                       </div>
-                      <button onClick="{{it.act}}" aria-label="{{it.actAria}}" style="flex:none;border:1px solid {{it.actLine}};border-radius:4px;padding:{{pickPad}};font-size:10.5px;font-weight:700;background:{{it.actBg}};color:{{it.actFg}};white-space:nowrap;min-height:{{pickH}}px">{{it.actLabel}}</button>
+                      <button onClick="{{it.act}}" aria-label="{{it.actAria}}" style="flex:none;border:1px solid {{it.actLine}};border-radius:4px;padding:{{pickPad}};font-size:11px;font-weight:700;background:{{it.actBg}};color:{{it.actFg}};white-space:nowrap;min-height:{{pickH}}px">{{it.actLabel}}</button>
                     </div>
                   </div>
                 </sc-for>
@@ -369,7 +371,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         </sc-if>
         <div ref="{{sentinelRef}}" style="height:2px"></div>
         <sc-if value="{{hasMore}}" hint-placeholder-val="{{ false }}">
-          <div style="padding:14px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:#6f737c">loading more…</div>
+          <div style="padding:14px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">loading more…</div>
         </sc-if>
       </div>
     </section>
@@ -378,7 +380,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
 
   <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
     <div onClick="{{menuClose}}" style="position:fixed;inset:0;z-index:60">
-      <div onClick="{{stopEv}}" role="menu" aria-label="Need actions" style="position:absolute;top:104px;right:18px;background:#232529;border:1px solid rgba(232,232,234,.14);border-radius:4px;padding:6px;display:flex;flex-direction:column;min-width:220px">
+      <div onClick="{{stopEv}}" role="menu" aria-label="Need actions" style="position:absolute;top:104px;right:18px;background:#232529;border:1px solid rgba(232,232,234,.18);border-radius:4px;padding:6px;display:flex;flex-direction:column;min-width:220px">
         <button onClick="{{menuEdit}}" role="menuitem" style="border:0;background:transparent;text-align:left;border-radius:4px;padding:9px 11px;font-size:12.5px;min-height:{{ctlH}}px;color:#e8e8ea" style-hover="background:rgba(232,232,234,.06)">✎ Edit need…</button>
         <sc-if value="{{menuCanCopy}}" hint-placeholder-val="{{ false }}">
           <button onClick="{{menuCopy}}" role="menuitem" style="border:0;background:transparent;text-align:left;border-radius:4px;padding:9px 11px;font-size:12.5px;min-height:{{ctlH}}px;color:#e8e8ea" style-hover="background:rgba(232,232,234,.06)">Copy {{menuN}} Figma links</button>
@@ -387,7 +389,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <button onClick="{{menuDelete}}" role="menuitem" style="border:0;background:transparent;text-align:left;border-radius:4px;padding:9px 11px;font-size:12.5px;min-height:{{ctlH}}px;color:#ea4a4b" style-hover="background:rgba(234,74,75,.1)">Delete need…</button>
         </sc-if>
         <sc-if value="{{menuSharedNote}}" hint-placeholder-val="{{ false }}">
-          <div style="padding:7px 11px 5px;font-size:10.5px;color:#6f737c;border-top:1px solid rgba(232,232,234,.08);margin-top:4px">Shared team need — it can't be deleted here.</div>
+          <div style="padding:7px 11px 5px;font-size:11px;color:#80848d;border-top:1px solid rgba(232,232,234,.08);margin-top:4px">Shared team need — it can't be deleted here.</div>
         </sc-if>
       </div>
     </div>
@@ -408,7 +410,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <button onClick="{{lbNext}}" aria-label="Next asset" style="flex:none;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-size:16px">›</button>
         </div>
         <div onClick="{{stopEv}}" style="flex:none;width:{{lbPanelW}};background:#232529;border-radius:4px;padding:16px 18px;align-self:{{lbPanelAlign}};max-height:100%;overflow-y:auto">
-          <div style="display:inline-block;font-size:10.5px;font-weight:700;border-radius:4px;padding:4px 10px;background:transparent;border:1px solid {{lbStatusLine}};color:{{lbStatusFg}};margin-bottom:8px">{{lbStatus}}</div>
+          <div style="display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:4px 10px;background:transparent;border:1px solid {{lbStatusLine}};color:{{lbStatusFg}};margin-bottom:8px">{{lbStatus}}</div>
           <sc-if value="{{lbHasFit}}" hint-placeholder-val="{{ false }}">
             <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{lbFitFg}};margin-bottom:8px">{{lbFitLine}}</div>
           </sc-if>
@@ -422,7 +424,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
             <div style="font-size:12px;color:#80848d;border-top:1px solid rgba(232,232,234,.1);padding-top:8px;margin-bottom:8px">{{lbPickInfo}}</div>
           </sc-if>
           <sc-if value="{{lbHasNote}}" hint-placeholder-val="{{ false }}">
-            <div style="font-size:12px;color:#c2c5cb;background:rgba(255,209,102,.14);border:1px solid rgba(255,209,102,.4);border-radius:4px;padding:8px 10px;margin-bottom:10px"><b style="font-size:10px;letter-spacing:.06em;color:#ffd166">USAGE</b><br>{{lbNote}}</div>
+            <div style="font-size:12px;color:#c2c5cb;background:rgba(255,209,102,.14);border:1px solid rgba(255,209,102,.4);border-radius:4px;padding:8px 10px;margin-bottom:10px"><b style="font-size:11px;letter-spacing:.06em;color:#ffd166">USAGE</b><br>{{lbNote}}</div>
           </sc-if>
           <div style="display:flex;flex-direction:column;gap:6px">
             <sc-if value="{{lbPrimFig}}" hint-placeholder-val="{{ false }}">
@@ -468,13 +470,13 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.65);white-space:nowrap">variants {{lbDupeCounter}}</span>
           <div style="display:flex;gap:6px;overflow-x:auto">
             <sc-for list="{{lbDupes}}" as="d" hint-placeholder-count="3">
-              <button onClick="{{d.go}}" aria-label="{{d.aria}}" style="flex:none;width:64px;height:44px;border-radius:4px;overflow:hidden;cursor:pointer;background-color:#e9ebee;background-image:{{d.bg}};background-size:cover;background-position:center;border:2px solid {{d.ring}};padding:0"></button>
+              <button onClick="{{d.go}}" aria-label="{{d.aria}}" style="flex:none;width:64px;height:44px;border-radius:4px;overflow:hidden;cursor:pointer;background-color:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);background-image:{{d.bg}};background-size:cover;background-position:center;border:2px solid {{d.ring}};padding:0"></button>
             </sc-for>
           </div>
         </sc-if>
         <span style="flex:1"></span>
         <sc-if value="{{wide}}" hint-placeholder-val="{{ true }}">
-          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap">← → assets · ↑ ↓ variants · esc</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap">← → assets · ↑ ↓ variants · p pick · enter publish · f figma · esc</span>
         </sc-if>
       </div>
     </div>
@@ -485,7 +487,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
       <form onClick="{{stopEv}}" onSubmit="{{pubSubmit}}" style="background:#232529;border-radius:4px;width:480px;max-height:90vh;overflow-y:auto;padding:22px 24px;border:1px solid #3a3e44">
         <div style="font-size:15px;font-weight:700;margin-bottom:12px">{{pubTitleH}}</div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-          <span role="img" aria-label="Asset preview" style="flex:none;width:84px;height:56px;border-radius:4px;border:1px solid rgba(232,232,234,.12);background-color:#e9ebee;background-image:{{pubImgBg}};background-size:contain;background-repeat:no-repeat;background-position:center"></span>
+          <span role="img" aria-label="Asset preview" style="flex:none;width:84px;height:56px;border-radius:4px;border:1px solid rgba(232,232,234,.18);background-color:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);background-image:{{pubImgBg}};background-size:contain;background-repeat:no-repeat;background-position:center"></span>
           <span style="min-width:0">
             <span style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;color:#c2c5cb">{{pubDims}}</span>
             <span style="display:block;font-size:11.5px;color:#80848d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{pubSrc}}</span>
@@ -499,7 +501,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           </sc-for>
         </select>
         <sc-if value="{{pubHasFit}}" hint-placeholder-val="{{ false }}">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:{{pubFitFg}};margin-bottom:8px">{{pubFitLine}}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{pubFitFg}};margin-bottom:8px">{{pubFitLine}}</div>
         </sc-if>
         <sc-if value="{{pubHasSem}}" hint-placeholder-val="{{ false }}">
           <div style="font-size:11.5px;color:#ffd166;background:rgba(255,209,102,.14);border:1px solid rgba(255,209,102,.4);border-radius:4px;padding:7px 10px;margin-bottom:10px">{{pubSemLine}}</div>
@@ -508,7 +510,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <input id="sf-pub-title" ref="{{pubTitleRef}}" defaultValue="{{pubTitleVal}}" onInput="{{pubTitleIn}}" placeholder="e.g. WhatsApp integration launch post" style="width:100%;background:#2a2d31;border:1px solid rgba(232,232,234,.17);border-radius:4px;padding:9px 12px;font-size:13px;min-height:{{ctlH}}px;margin-bottom:12px;outline:none">
         <label style="display:block;font-size:11px;font-weight:700;color:#8b8f96;margin-bottom:4px" for="sf-pub-note">Usage note (optional)</label>
         <textarea id="sf-pub-note" ref="{{pubNoteRef}}" defaultValue="{{pubNoteVal}}" rows="2" placeholder="e.g. Keep the headline zone clear — text is applied later" style="width:100%;background:#2a2d31;border:1px solid rgba(232,232,234,.17);border-radius:4px;padding:9px 12px;font-size:13px;min-height:{{ctlH}}px;margin-bottom:10px;outline:none;resize:vertical"></textarea>
-        <div style="font-size:11px;color:#6f737c;margin-bottom:14px">{{pubShareNote}}</div>
+        <div style="font-size:11px;color:#80848d;margin-bottom:14px">{{pubShareNote}}</div>
         <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center">
           <sc-if value="{{pubBlockedMsg}}" hint-placeholder-val="{{ false }}">
             <span style="flex:1;font-size:11px;color:#ffd166">{{pubBlocked}}</span>
@@ -537,12 +539,12 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <input ref="{{needCustomRef}}" placeholder="custom, e.g. 1600×900" aria-label="Custom format" style="flex:1;background:#2a2d31;border:1px solid rgba(232,232,234,.17);border-radius:4px;padding:8px 12px;font-size:12.5px;outline:none;min-height:{{ctlH}}px">
           <button type="button" onClick="{{needAddFmt}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:8px 14px;font-size:12px;font-weight:600;min-height:{{ctlH}}px">Add</button>
         </div>
-        <div style="font-size:11px;color:#6f737c;margin-bottom:12px">No formats selected = any size counts. Off-format publishes carry an OFF-SPEC badge.</div>
+        <div style="font-size:11px;color:#80848d;margin-bottom:12px">No formats selected = any size counts. Off-format publishes carry an OFF-SPEC badge.</div>
         <label style="display:block;font-size:11px;font-weight:700;color:#8b8f96;margin-bottom:4px" for="sf-need-spec">Format note (shown with the need)</label>
         <input id="sf-need-spec" ref="{{needSpecRef}}" defaultValue="{{needDlgSpec}}" placeholder="e.g. promo &amp; registration graphics" style="width:100%;background:#2a2d31;border:1px solid rgba(232,232,234,.17);border-radius:4px;padding:9px 12px;font-size:13px;min-height:{{ctlH}}px;margin-bottom:12px;outline:none">
         <label style="display:block;font-size:11px;font-weight:700;color:#8b8f96;margin-bottom:4px" for="sf-need-note">Usage guidance (optional)</label>
         <textarea id="sf-need-note" ref="{{needNoteRef}}" defaultValue="{{needDlgNote}}" rows="2" placeholder="When and how to use these assets" style="width:100%;background:#2a2d31;border:1px solid rgba(232,232,234,.17);border-radius:4px;padding:9px 12px;font-size:13px;min-height:{{ctlH}}px;margin-bottom:8px;outline:none;resize:vertical"></textarea>
-        <div style="font-size:11px;color:#6f737c;margin-bottom:14px">{{needShareNote}}</div>
+        <div style="font-size:11px;color:#80848d;margin-bottom:14px">{{needShareNote}}</div>
         <div style="display:flex;gap:8px;align-items:center">
           <sc-if value="{{needCanDelete}}" hint-placeholder-val="{{ false }}">
             <button type="button" onClick="{{needDelete}}" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;min-height:{{ctlH}}px">Delete need…</button>
@@ -595,14 +597,14 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <div><b>Review</b> holds candidates. Publish one to give it a need, a clear title and an optional usage note.</div>
           <div><b>Ready</b> is the destination: published assets organized by the concrete need they serve, with coverage per required format. Use one via <b>Open in Figma</b>.</div>
         </div>
-        <div style="font-size:12px;color:#c2c5cb;background:rgba(232,232,234,.05);border:1px solid rgba(232,232,234,.1);border-radius:4px;padding:10px 12px;margin-bottom:12px;line-height:1.6"><b style="font-size:10.5px;letter-spacing:.06em;color:#80848d">WHAT IS SHARED</b><br>{{helpShareTxt}}</div>
-        <div style="font-size:11.5px;color:#80848d;border-top:1px solid rgba(232,232,234,.1);padding-top:10px">Source snapshot: {{helpFresh}}. Keys: <span style="font-family:'JetBrains Mono',monospace">/</span> search · <span style="font-family:'JetBrains Mono',monospace">← →</span> in zoom · <span style="font-family:'JetBrains Mono',monospace">esc</span> close.</div>
+        <div style="font-size:12px;color:#c2c5cb;background:rgba(232,232,234,.05);border:1px solid rgba(232,232,234,.1);border-radius:4px;padding:10px 12px;margin-bottom:12px;line-height:1.6"><b style="font-size:11px;letter-spacing:.06em;color:#80848d">WHAT IS SHARED</b><br>{{helpShareTxt}}</div>
+        <div style="font-size:11.5px;color:#80848d;border-top:1px solid rgba(232,232,234,.1);padding-top:10px">Source snapshot: {{helpFresh}}. Keys: <span style="font-family:'JetBrains Mono',monospace">/</span> search · <span style="font-family:'JetBrains Mono',monospace">← →</span> in zoom · <span style="font-family:'JetBrains Mono',monospace">p</span> pick · <span style="font-family:'JetBrains Mono',monospace">enter</span> publish · <span style="font-family:'JetBrains Mono',monospace">f</span> Figma · <span style="font-family:'JetBrains Mono',monospace">esc</span> close.</div>
       </div>
     </div>
   </sc-if>
 
   <sc-if value="{{toastShow}}" hint-placeholder-val="{{ false }}">
-    <div role="status" aria-live="polite" style="position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#e4e7ec;color:#14161a;font-size:12.5px;font-weight:500;border-radius:4px;padding:9px 18px;z-index:90;pointer-events:none;max-width:80vw">{{toastMsg}}</div>
+    <div role="status" aria-live="polite" style="position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#e4e7ec;color:#14161a;font-size:12.5px;font-weight:500;border-radius:4px;padding:{{toastPad}};z-index:90;pointer-events:{{toastPe}};display:flex;align-items:center;gap:10px;max-width:80vw"><span>{{toastMsg}}</span><sc-if value="{{toastHasAct}}" hint-placeholder-val="{{ false }}"><button onClick="{{toastGo}}" style="border:0;background:oklch(0.55 0.17 262);color:#fff;border-radius:4px;padding:5px 12px;font-size:11px;font-weight:600;flex:none;cursor:pointer">{{toastActLabel}}</button></sc-if></div>
   </sc-if>
   <input type="file" ref="{{fileRef}}" onChange="{{onFiles}}" multiple accept="image/*" aria-hidden="true" style="display:none">
 </div>
@@ -616,7 +618,7 @@ class Component extends DCLogic {
     picks:{}, needs:[], uploads:[],
     shared:{}, queue:{adds:{}, rms:[]}, who:'', sync:'off', snapTs:0, staleN:0, staleUp:0, staleHide:false, ext:'unknown',
     shown:160, gw:1100, rootW:1200,
-    lb:null, mng:false, dlg:null, menu:false, help:false, toast:'' };
+    lb:null, mng:false, dlg:null, menu:false, help:false, toast:'', toastAct:null };
 
   PUBLIC_BASE = 'https://albertastabatsyan.github.io/synthflow-asset-picker/';
   REMOTE = this.PUBLIC_BASE;
@@ -1095,9 +1097,9 @@ class Component extends DCLogic {
   libSearchRef2=el=>{ this.libSearchEl2=el; };
   readySearchRef=el=>{ this.readySearchEl=el; };
 
-  toast(msg){ clearTimeout(this._th); this.setState({toast:msg});
-    this._th=setTimeout(()=>this.setState({toast:''}),2600); }
-  setPicks(p,msg,extra){ this.setState({picks:p, ...(extra||{})},()=>this.save()); if(msg) this.toast(msg); }
+  toast(msg, act){ clearTimeout(this._th); this.setState({toast:msg, toastAct:act||null});
+    this._th=setTimeout(()=>this.setState({toast:'', toastAct:null}), act?6000:2600); }
+  setPicks(p,msg,extra,act){ this.setState({picks:p, ...(extra||{})},()=>this.save()); if(msg) this.toast(msg, act); }
   openDlg(dlg){ this.pushFocus(); this._lbFocused=false; this._pubFocused=false; this._needFocused=false; this.setState({dlg, menu:false}); }
 
   queueAdd(qid,dest){ const q={adds:{...this.state.queue.adds}, rms:this.state.queue.rms.filter(x=>x!==qid)};
@@ -1145,16 +1147,21 @@ class Component extends DCLogic {
         this.setPicks(p,'Removed from Review'+(e.shared?' — submit picks to share the removal':''),{queue:q}); }
       else this.setPicks(p,'Removed from Review — the source stays in the Library');
       return; }
+    // attribution is the point of a shared bucket — ask once, skippable
+    if(S.sync==='live' && !S.who && !this._whoAsked && !c.localOnly){
+      this._whoAsked=true; this._pendingPick=qid;
+      this.openDlg({kind:'who', then:'pick'}); return; }
     const dest=this.effDest(S.gather||this.autoDest(c));
     p[qid]={by:S.who||'', dest, status:'cand', ab:'', at:0, note:'', name:'', exc:false, t:Date.now(), mod:true};
     const lbl=this.needLabel(dest);
-    if(c.localOnly) this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+' — uploads stay in this browser');
+    const act={label:'Publish now', go:()=>this.openPub(qid)};
+    if(c.localOnly) this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+' — uploads stay in this browser', null, act);
     else if(S.sync==='live'){ const sharedDest=this.isSharedNeed(dest)?dest:'';
       this.postPick(qid,'add',sharedDest,()=>this.markSynced(qid,{dest:sharedDest,status:'cand'}));
-      this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+(dest&&!sharedDest?' — pick shared live; the need stays in this browser':' — live for the whole team')); }
+      this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+(dest&&!sharedDest?' — pick shared live; the need stays in this browser':' — live for the whole team'), null, act); }
     else if(!c.custom){ const q=this.queueAdd(qid,dest);
-      this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+' — submit to share with the team',{queue:q}); }
-    else this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+' — the team bucket is unreachable, so this pick stays in this browser');
+      this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+' — submit to share with the team',{queue:q}, act); }
+    else this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+' — the team bucket is unreachable, so this pick stays in this browser', null, act);
   }
   openPub(qid, edit){
     const e=this.state.picks[qid]; if(!e) return;
@@ -1189,6 +1196,21 @@ class Component extends DCLogic {
     this.setState(extra); this.restoreFocus();
     this.setPicks(p, dlg.edit?'Saved':('✓ Published into '+n.label+((!f.ok&&!f.free)?' — badged OFF-SPEC':'')+tail), extra.queue?{queue:extra.queue}:null);
   };
+  /* Inline need change from a Review row — same recat the publish dialog
+     sends, without the dialog round-trip. */
+  assignNeed(qid, dest){ const e=this.state.picks[qid]; if(!e||e.status!=='cand') return;
+    const c=this.card(qid); dest=this.effDest(dest);
+    const p={...this.state.picks};
+    p[qid]={...e, dest, mod:true};
+    const lbl=this.needLabel(dest);
+    let extra={}; let tail='';
+    if(this.state.sync==='live' && c && !c.localOnly){
+      if(!dest || this.isSharedNeed(dest)){
+        this.postPick(qid,'recat',dest,()=>this.markSynced(qid,{dest, name:e.name||'', note:e.note||'', status:e.status||'cand'})); }
+      else tail=' — the need is local to this browser'; }
+    else if(c && !c.custom) extra.queue=this.queueAdd(qid,dest);
+    this.setPicks(p, (lbl?('Assigned → '+lbl):'Unassigned')+tail, extra);
+  }
   sendBack(qid){ const p={...this.state.picks}; if(!p[qid]) return;
     p[qid]={...p[qid], status:'cand', ab:'', at:0, exc:false, mod:true};
     const c=this.card(qid); const dest=this.effDest(p[qid].dest);
@@ -1297,7 +1319,9 @@ class Component extends DCLogic {
     const v=(this.whoEl&&this.whoEl.value.trim())||'';
     if(!v){ this.toast('A name helps teammates know who picked what'); return; }
     const then=this.state.dlg&&this.state.dlg.then;
-    this.setState({who:v, dlg:null},()=>{ this.save(); this.restoreFocus(); if(then==='submit') this.submitPicks(); }); };
+    this.setState({who:v, dlg:null},()=>{ this.save(); this.restoreFocus();
+      if(then==='submit') this.submitPicks();
+      else if(then==='pick'&&this._pendingPick){ const q=this._pendingPick; this._pendingPick=null; this.pick(q); } }); };
 
   openLb(ids, idx, ctx){ if(!this.state.lb) this.pushFocus(); this._lbFocused=false; this.setState({lb:{ids,idx,mi:0,ctx}, mng:false}); }
   lbMove(d){ const lb=this.state.lb; if(!lb) return;
@@ -1451,6 +1475,11 @@ class Component extends DCLogic {
       else if(e.key==='ArrowRight'){ e.preventDefault(); this.lbMove(1); }
       else if(e.key==='ArrowUp'){ e.preventDefault(); this.lbDupe(-1); }
       else if(e.key==='ArrowDown'){ e.preventDefault(); this.lbDupe(1); }
+      else if(e.key==='p'||e.key==='P'){ e.preventDefault(); this.pick(lb.ids[lb.idx]); }
+      else if(e.key==='Enter'){ const qid=lb.ids[lb.idx]; const pk=this.state.picks[qid];
+        if(pk&&pk.status==='cand'){ e.preventDefault(); this.openPub(qid); } }
+      else if(e.key==='f'||e.key==='F'){ const c=this.card(lb.ids[lb.idx]);
+        if(c&&!c.custom&&c.fig){ e.preventDefault(); window.open(c.fig,'_blank','noopener'); } }
       return; }
     if(e.key==='/'){ const el=view==='lib'?(this.state.gather?this.libSearchEl2:this.libSearchEl):(view==='ready'?this.readySearchEl:null);
       if(el){ e.preventDefault(); el.focus(); } }
@@ -1473,7 +1502,7 @@ class Component extends DCLogic {
   sel(val,onCh,opts,ariaLabel,maxW){ const nar=this.state.rootW<760;
     return React.createElement('select',
     {value:val, onChange:onCh, 'aria-label':ariaLabel,
-     style:{background:'#2a2d31',border:'1px solid rgba(232,232,234,.14)',borderRadius:4,
+     style:{background:'#2a2d31',border:'1px solid rgba(232,232,234,.18)',borderRadius:4,
        padding:'6px 8px',fontSize:12,color:'#e8e8ea',maxWidth:maxW||170,outline:'none',minHeight:nar?44:30}},
     opts.map(o=>React.createElement('option',{key:o[0],value:o[0]},o[1]))); }
 
@@ -1526,7 +1555,7 @@ class Component extends DCLogic {
       .map(x=>({
         label:x.label, ct:String(x.ct), dot:x.dot, tip:x.tip, cur:S.needSel===x.id?'true':'false',
         bg:S.needSel===x.id?'oklch(0.30 0.05 262)':'transparent',
-        fg:x.ct||x.id===''?'#e8e8ea':'#6f737c', wt:S.needSel===x.id?'700':'500',
+        fg:x.ct||x.id===''?'#e8e8ea':'#80848d', wt:S.needSel===x.id?'700':'500',
         ctFg:x.ct?'#ffd166':'#5c6068',
         go:()=>this.setState({needSel:x.id, menu:false}) }));
     const secNeeds=selNeed?[selNeed]:S.needs;
@@ -1558,6 +1587,9 @@ class Component extends DCLogic {
             aria:'Open '+dn+', '+dims+(offspec?', off-spec':''),
             meta:offspec?dims:(f.free?dims:('fits '+f.label)),
             metaFg:offspec?'#ffd166':'#80848d',
+            hasNote:!!p.note, note:p.note||'',
+            copy:(e)=>{e.stopPropagation(); this.doCopy([dn+' — '+c.fig]);},
+            copyAria:'Copy Figma link for '+dn,
             dims, offspec, local:c.custom,
             hasFig:!c.custom, fig:c.fig, figAria:'Open '+dn+' in Figma',
             dl:(e)=>{e.stopPropagation(); this.dlAsset(qid);}, dlAria:'Download '+dn,
@@ -1590,9 +1622,8 @@ class Component extends DCLogic {
         fitLine, fitFg,
         zoomAria:'Judge '+dn+' full-size',
         open:()=>{ const ids=this._revQids||[]; this.openLb(ids, Math.max(0,ids.indexOf(qid)), 'rev'); },
-        chip:assigned?this.needLabel(assigned):'no need yet',
-        chipBg:'transparent', chipLine:assigned?'rgba(232,232,234,.15)':'rgba(255,209,102,.4)',
-        chipFg:assigned?'#e8e8ea':'#ffd166',
+        needSel:this.sel(assigned,(e)=>this.assignNeed(qid,e.target.value),
+          [['','no need yet'],...this.state.needs.map(n=>[n.id,n.label])],'Need for '+dn,170),
         pubAria:'Publish '+dn+' to Ready',
         publish:()=>this.openPub(qid),
         removeAria:'Remove '+dn+' from Review',
@@ -1637,11 +1668,11 @@ class Component extends DCLogic {
           let actLabel='＋ Pick', actBg='transparent', actFg='#e8e8ea', actLine='rgba(232,232,234,.24)', actAria='Pick '+dn+' for review';
           if(isReady){ actLabel='Open'; actBg='transparent'; actFg='#b5ff90'; actLine='#b5ff90'; actAria='Open '+dn+' — already on Ready'; }
           else if(isCand){ actLabel='✓'; actBg='transparent'; actFg='#8ab4ff'; actLine='oklch(0.45 0.09 262)'; actAria='Remove '+dn+' from Review'; }
-          let sub=c.page, subFg='#6f737c';
+          let sub=c.page, subFg='#80848d';
           if(gatherNeed){ const ti=this._gTier?this._gTier[c.qid]:2;
             const reason=sec.reasons?this.gReason(c,gatherNeed,ti):'';
             sub=reason?(reason+' · '+c.page):c.page;
-            subFg=reason&&reason.startsWith('fits')?'#46c270':'#6f737c'; }
+            subFg=reason&&reason.startsWith('fits')?'#46c270':'#80848d'; }
           else if(c.members.length>1) sub=c.page+' · ×'+c.members.length;
           tiles.push({ key:c.qid, img:c.url, name:dn, sub, subFg, hasFig:!c.custom, fig:c.fig, figAria:'Open '+dn+' in Figma — new tab',
             ld:(e)=>this.measure(c, e.target),
@@ -1722,7 +1753,7 @@ class Component extends DCLogic {
           lbHasNote:!!(pk&&pk.note), lbNote:pk?pk.note:'',
           lbImgEl:React.createElement('img',{src:mem[mi].url, alt:mem[mi].name||dn, onClick:this.stopEv,
             onLoad:(e)=>this.measure(c, e.target),
-            style:{maxWidth:'calc(100% - 110px)', maxHeight:'100%', objectFit:'contain', borderRadius:4, background:'#e9ebee', minHeight:0}}),
+            style:{maxWidth:'calc(100% - 110px)', maxHeight:'100%', objectFit:'contain', borderRadius:4, background:'#e9ebee', boxShadow:'inset 0 0 0 1px rgba(0,0,0,.08)', minHeight:0}}),
           lbPrimFig:isReady&&!c.custom, lbPrimDl:isReady&&c.custom,
           lbPrimPublish:!!isCand,
           lbPrimPick:!pk,
@@ -1920,8 +1951,12 @@ class Component extends DCLogic {
       confirmLabel:dlg.label||'Confirm',
       confirmGo:()=>{ const go=dlg.go; this.setState({dlg:null}); this.restoreFocus(); if(go) go(); },
       confirmCancelRef:this.confirmCancelRef,
-      dlgCancel:()=>{ this.setState({dlg:null}); this.restoreFocus(); },
+      dlgCancel:()=>{ const d=S.dlg; this.setState({dlg:null}); this.restoreFocus();
+        if(d&&d.kind==='who'&&d.then==='pick'&&this._pendingPick){ const q=this._pendingPick; this._pendingPick=null; this.pick(q); } },
       toastShow:!!S.toast, toastMsg:S.toast,
+      toastHasAct:!!S.toastAct, toastActLabel:S.toastAct?S.toastAct.label:'',
+      toastPe:S.toastAct?'auto':'none', toastPad:S.toastAct?'7px 8px 7px 18px':'9px 18px',
+      toastGo:()=>{ const a=S.toastAct; this.setState({toast:'', toastAct:null}); if(a) a.go(); },
       stopEv:this.stopEv };
   }
   openLbAt(qid){ const ids=this._libQids&&this._libQids.length?this._libQids:[qid];
