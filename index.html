@@ -673,10 +673,32 @@ class Component extends DCLogic {
   async componentDidMount(){
     this._key = e => this.onKey(e);
     window.addEventListener('keydown', this._key);
+    this._pop = () => this.applyHash();
+    window.addEventListener('popstate', this._pop);
     await this.loadCatalog();
+    this.applyHash();
   }
+  componentDidUpdate(){ this.syncUrl(); }
+  /* The three views are URL pages — #library, #review, #ready — so a
+     reload keeps your place and back/forward switch views. */
+  VIEW_HASH = {lib:'#library', rev:'#review', ready:'#ready'};
+  syncUrl(){ const S=this.state; if(S.phase!=='ok'||this._popApplying) return;
+    const hash=this.VIEW_HASH[S.view]||'#ready';
+    if(hash===this._urlHash) return;
+    const first=this._urlHash===undefined;
+    this._urlHash=hash;
+    try{ history[first?'replaceState':'pushState'](null,'',hash); }catch(e){}
+  }
+  applyHash = () => {
+    if(this.state.phase!=='ok') return;
+    const view=Object.keys(this.VIEW_HASH).find(v=>this.VIEW_HASH[v]===location.hash);
+    this._popApplying=true;
+    this.setState({view:view||this.state.view, menu:false},()=>{
+      this._popApplying=false; this._urlHash=undefined; this.syncUrl(); });
+  };
   componentWillUnmount(){
     window.removeEventListener('keydown', this._key);
+    if(this._pop) window.removeEventListener('popstate', this._pop);
     if(this._ro) this._ro.disconnect(); if(this._rro) this._rro.disconnect();
     if(this._io) this._io.disconnect();
     clearInterval(this._poll);
