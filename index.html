@@ -270,8 +270,9 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
             <sc-for list="{{pageRows}}" as="p" hint-placeholder-count="12">
               <button onClick="{{p.go}}" style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;cursor:pointer;position:relative;width:100%;border:0;background:transparent;text-align:left;min-height:28px" style-hover="background:rgba(232,232,234,.06)">
                 <sc-if value="{{p.cur}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:4px;background:oklch(0.30 0.05 262);border:1px solid oklch(0.45 0.09 262);pointer-events:none"></span></sc-if>
+                <sc-if value="{{p.hasPicks}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position:relative;width:6px;height:6px;border-radius:50%;background:#8ab4ff;flex:none"></span></sc-if>
                 <span style="position:relative;flex:1;font-size:12px;color:#c2c5cb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.name}}</span>
-                <span style="position:relative;font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">{{p.ct}}</span>
+                <span style="position:relative;font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d"><sc-if value="{{p.hasPicks}}" hint-placeholder-val="{{ false }}"><b style="color:#8ab4ff;font-weight:600">{{p.pct}}</b>/</sc-if>{{p.ct}}</span>
               </button>
             </sc-for>
           </div>
@@ -339,7 +340,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
               <div style="display:flex;gap:10px;margin-bottom:12px">
                 <sc-for list="{{row.tiles}}" as="it" hint-placeholder-count="4">
                   <div style="flex:none;width:{{it.w}}px;display:flex;flex-direction:column;gap:0;position:relative">
-                    <div role="button" tabIndex="0" aria-label="{{it.aria}}" onClick="{{it.open}}" onKeyDown="{{it.keyd}}" style="position:relative;width:100%;height:{{it.h}}px;border-radius:4px 4px 0 0;background:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);border:1px solid rgba(232,232,234,.18);border-bottom:0;overflow:hidden;cursor:zoom-in" style-hover="border-color:rgba(232,232,234,.36)">
+                    <div role="button" tabIndex="0" data-tile="1" aria-label="{{it.aria}}" onClick="{{it.open}}" onKeyDown="{{it.keyd}}" style="position:relative;width:100%;height:{{it.h}}px;border-radius:4px 4px 0 0;background:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);border:1px solid rgba(232,232,234,.18);border-bottom:0;overflow:hidden;cursor:zoom-in" style-hover="border-color:rgba(232,232,234,.36)">
                       <img src="{{it.img}}" alt="" loading="lazy" draggable="{{false}}" onError="{{imgErr}}" onLoad="{{it.ld}}" style="width:100%;height:100%;object-fit:cover;display:block">
                       <sc-if value="{{it.isReady}}" hint-placeholder-val="{{ false }}">
                         <div style="position:absolute;inset:0;border:2px solid #b5ff90;pointer-events:none"></div>
@@ -598,7 +599,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <div><b>Ready</b> is the destination: published assets organized by the concrete need they serve, with coverage per required format. Use one via <b>Open in Figma</b>.</div>
         </div>
         <div style="font-size:12px;color:#c2c5cb;background:rgba(232,232,234,.05);border:1px solid rgba(232,232,234,.1);border-radius:4px;padding:10px 12px;margin-bottom:12px;line-height:1.6"><b style="font-size:11px;letter-spacing:.06em;color:#80848d">WHAT IS SHARED</b><br>{{helpShareTxt}}</div>
-        <div style="font-size:11.5px;color:#80848d;border-top:1px solid rgba(232,232,234,.1);padding-top:10px">Source snapshot: {{helpFresh}}. Keys: <span style="font-family:'JetBrains Mono',monospace">/</span> search · <span style="font-family:'JetBrains Mono',monospace">← →</span> in zoom · <span style="font-family:'JetBrains Mono',monospace">p</span> pick · <span style="font-family:'JetBrains Mono',monospace">enter</span> publish · <span style="font-family:'JetBrains Mono',monospace">f</span> Figma · <span style="font-family:'JetBrains Mono',monospace">esc</span> close.</div>
+        <div style="font-size:11.5px;color:#80848d;border-top:1px solid rgba(232,232,234,.1);padding-top:10px">Source snapshot: {{helpFresh}}. Keys: <span style="font-family:'JetBrains Mono',monospace">/</span> search · <span style="font-family:'JetBrains Mono',monospace">↑ ↓ ← →</span> move through the grid and zoom · <span style="font-family:'JetBrains Mono',monospace">space</span>/<span style="font-family:'JetBrains Mono',monospace">p</span> pick · <span style="font-family:'JetBrains Mono',monospace">enter</span> zoom / publish · <span style="font-family:'JetBrains Mono',monospace">f</span> Figma · <span style="font-family:'JetBrains Mono',monospace">esc</span> close.</div>
       </div>
     </div>
   </sc-if>
@@ -1082,6 +1083,24 @@ class Component extends DCLogic {
       {root:this.gridEl||null, rootMargin:'900px'}); this._io.observe(el); } };
   more(){ const t=this._libTotal||0;
     if(this.state.shown<t) this.setState(s=>({shown:Math.min(t,s.shown+160)})); }
+  /* Arrow-key cursor through the Library grid — moves real focus, so the
+     focus ring is the cursor and Enter/Space act on the focused tile. */
+  gridNav(key){ const root=this.gridEl; if(!root) return false;
+    const els=[...root.querySelectorAll('[data-tile="1"]')]; if(!els.length) return false;
+    let i=els.indexOf(document.activeElement);
+    if(i<0){ els[0].focus(); els[0].scrollIntoView({block:'nearest'}); return true; }
+    if(key==='ArrowRight') i=Math.min(els.length-1,i+1);
+    else if(key==='ArrowLeft') i=Math.max(0,i-1);
+    else { const r=els[i].getBoundingClientRect(); const cx=r.left+r.width/2;
+      let best=-1, bd=Infinity;
+      for(let j=0;j<els.length;j++){ const q=els[j].getBoundingClientRect();
+        if(key==='ArrowDown'? q.top>r.top+4 : q.top<r.top-4){
+          const d=Math.abs(q.top-r.top)*10000+Math.abs(q.left+q.width/2-cx);
+          if(d<bd){ bd=d; best=j; } } }
+      if(best<0) return true;
+      i=best; }
+    els[i].focus(); els[i].scrollIntoView({block:'nearest'});
+    return true; }
   needNameRef=el=>{ this.needNameEl=el; if(el && !this._needFocused){ this._needFocused=true; setTimeout(()=>el.focus(),30); } };
   needSpecRef=el=>{ this.needSpecEl=el; };
   needNoteRef=el=>{ this.needNoteEl=el; };
@@ -1481,6 +1500,8 @@ class Component extends DCLogic {
       else if(e.key==='f'||e.key==='F'){ const c=this.card(lb.ids[lb.idx]);
         if(c&&!c.custom&&c.fig){ e.preventDefault(); window.open(c.fig,'_blank','noopener'); } }
       return; }
+    if(view==='lib'&&(e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='ArrowUp'||e.key==='ArrowDown')){
+      if(this.gridNav(e.key)) e.preventDefault(); return; }
     if(e.key==='/'){ const el=view==='lib'?(this.state.gather?this.libSearchEl2:this.libSearchEl):(view==='ready'?this.readySearchEl:null);
       if(el){ e.preventDefault(); el.focus(); } }
   }
@@ -1676,7 +1697,7 @@ class Component extends DCLogic {
           else if(c.members.length>1) sub=c.page+' · ×'+c.members.length;
           tiles.push({ key:c.qid, img:c.url, name:dn, sub, subFg, hasFig:!c.custom, fig:c.fig, figAria:'Open '+dn+' in Figma — new tab',
             ld:(e)=>this.measure(c, e.target),
-            aria:dn+' — '+c.page+' — '+this.dims(c)+(isReady?' — on Ready':(isCand?' — in Review':''))+' — press Enter to zoom',
+            aria:dn+' — '+c.page+' — '+this.dims(c)+(isReady?' — on Ready':(isCand?' — in Review':''))+' — Enter zooms, Space picks',
             w:Math.round(t.w*10)/10, h:Math.round(t.h),
             isReady:!!isReady, isCand:!!isCand,
             tag:isReady?('✓ '+this.needLabel(this.effDest(pk.dest))):(isCand?('→ '+(this.needLabel(this.effDest(pk.dest))||'no need yet')):''),
@@ -1685,7 +1706,8 @@ class Component extends DCLogic {
               if(isReady) this.openLbAt(c.qid);
               else this.pick(c.qid); },
             open:()=>this.openLbAt(c.qid),
-            keyd:(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); this.openLbAt(c.qid); } } });
+            keyd:(e)=>{ if(e.key==='Enter'){ e.preventDefault(); this.openLbAt(c.qid); }
+              else if(e.key===' '){ e.preventDefault(); this.pick(c.qid); } } });
         }
         rows.push({key:'r'+(ri++), tiles});
       }
@@ -1701,12 +1723,19 @@ class Component extends DCLogic {
       curAria:S.fi===i?'true':'false',
       go:()=>this.setState({fi:i, page:'', q:'', shape:'', pageQ:'', shown:160}) }));
     const pq=S.pageQ.trim().toLowerCase();
-    const pageRows=(fs&&!fs.all&&!fs.custom)?[
-      {key:'__all', name:'All pages', ct:this.fmt(fs.cards.length), cur:!S.page,
+    // pages you already harvested from carry a lit dot and picked/total
+    const pickedByPage={}; let pickedInSrc=0;
+    if(ok&&fs&&!fs.all&&!fs.custom){
+      for(const pid of Object.keys(S.picks)){ const pc=this._byQid.get(pid);
+        if(pc&&pc.srcIdx>=0&&(this.fsets||[])[pc.srcIdx]===fs){
+          pickedByPage[pc.page]=(pickedByPage[pc.page]||0)+1; pickedInSrc++; } } }
+    const pageRows=((fs&&!fs.all&&!fs.custom)?[
+      {key:'__all', name:'All pages', total:fs.cards.length, picked:pickedInSrc, cur:!S.page,
         go:()=>this.setState({page:'', shown:160})},
       ...fs.pageOrder.filter(pg=>!pq||pg.toLowerCase().includes(pq)).map(pg=>({
-        key:pg, name:pg||'(untitled)', ct:this.fmt(fs.pageCt[pg]), cur:S.page===pg,
-        go:()=>this.setState({page:pg, shown:160}) }))]:[];
+        key:pg, name:pg||'(untitled)', total:fs.pageCt[pg], picked:pickedByPage[pg]||0, cur:S.page===pg,
+        go:()=>this.setState({page:pg, shown:160}) }))]:[])
+      .map(x=>({...x, hasPicks:x.picked>0, pct:String(x.picked), ct:this.fmt(x.total)}));
     const shapeChips=[['','Any'],['square','1:1'],['landscape','Wide'],['portrait','Tall'],['banner','Banner']]
       .map(([id,label])=>({key:id||'any', label, on:S.shape===id?'true':'false',
         bg:S.shape===id?'#e4e7ec':'transparent', fg:S.shape===id?'#111214':'#8b8f96',
