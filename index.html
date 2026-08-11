@@ -270,9 +270,9 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
             <sc-for list="{{pageRows}}" as="p" hint-placeholder-count="12">
               <button onClick="{{p.go}}" aria-current="{{p.curAria}}" data-page-row="1" style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;cursor:pointer;position:relative;width:100%;border:0;background:transparent;text-align:left;min-height:28px" style-hover="background:rgba(232,232,234,.06)">
                 <sc-if value="{{p.cur}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:4px;background:oklch(0.30 0.05 262);border:1px solid oklch(0.45 0.09 262);pointer-events:none"></span></sc-if>
-                <sc-if value="{{p.hasPicks}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position:relative;width:6px;height:6px;border-radius:50%;background:#8ab4ff;flex:none"></span></sc-if>
+                <sc-if value="{{p.hasPicks}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position:relative;width:6px;height:6px;border-radius:50%;background:{{p.dotFg}};flex:none"></span></sc-if>
                 <span style="position:relative;flex:1;font-size:12px;color:#c2c5cb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.name}}</span>
-                <span style="position:relative;font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d"><sc-if value="{{p.hasPicks}}" hint-placeholder-val="{{ false }}"><b style="color:#8ab4ff;font-weight:600">{{p.pct}}</b>/</sc-if>{{p.ct}}</span>
+                <span style="position:relative;font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d"><sc-if value="{{p.hasPicks}}" hint-placeholder-val="{{ false }}"><b style="color:{{p.dotFg}};font-weight:600">{{p.pct}}</b>/</sc-if>{{p.ct}}</span>
               </button>
             </sc-for>
           </div>
@@ -293,6 +293,11 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <div style="flex:1;min-width:8px"></div>
           <sc-if value="{{libFilters}}" hint-placeholder-val="{{ true }}">
             <input type="search" ref="{{libSearchRef}}" value="{{libQ}}" onChange="{{onLibQ}}" placeholder="{{libPh}}" aria-label="Search the library" style="width:190px;background:#2a2d31;border:1px solid rgba(232,232,234,.13);border-radius:4px;padding:7px 13px;font-size:12.5px;outline:none;min-height:{{ctlH}}px">
+            <div role="group" aria-label="Pick state filter" style="display:flex;background:rgba(232,232,234,.06);border:1px solid rgba(232,232,234,.1);border-radius:4px;padding:2px;gap:1px">
+              <sc-for list="{{pickChips}}" as="pc" hint-placeholder-count="3">
+                <button onClick="{{pc.go}}" aria-pressed="{{pc.on}}" style="border:0;background:{{pc.bg}};color:{{pc.fg}};border-radius:4px;padding:{{chipPad}};font-size:11px;font-weight:600;white-space:nowrap;min-height:{{chipH}}px">{{pc.label}}</button>
+              </sc-for>
+            </div>
             <div role="group" aria-label="Shape filter" style="display:flex;background:rgba(232,232,234,.06);border:1px solid rgba(232,232,234,.1);border-radius:4px;padding:2px;gap:1px">
               <sc-for list="{{shapeChips}}" as="sh" hint-placeholder-count="5">
                 <button onClick="{{sh.go}}" aria-pressed="{{sh.on}}" style="border:0;background:{{sh.bg}};color:{{sh.fg}};border-radius:4px;padding:{{chipPad}};font-size:11px;font-weight:600;white-space:nowrap;min-height:{{chipH}}px;min-width:{{chipH}}px">{{sh.label}}</button>
@@ -339,7 +344,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
             <sc-for list="{{ls.rows}}" as="row" hint-placeholder-count="3">
               <div style="display:flex;gap:10px;margin-bottom:12px">
                 <sc-for list="{{row.tiles}}" as="it" hint-placeholder-count="4">
-                  <div style="flex:none;width:{{it.w}}px;display:flex;flex-direction:column;gap:0;position:relative">
+                  <div style="flex:none;width:{{it.w}}px;display:flex;flex-direction:column;gap:0;position:relative;opacity:{{it.op}};transition:opacity .15s" style-hover="opacity:1">
                     <div role="button" tabIndex="0" data-tile="1" aria-label="{{it.aria}}" onClick="{{it.open}}" onKeyDown="{{it.keyd}}" style="position:relative;width:100%;height:{{it.h}}px;border-radius:4px 4px 0 0;background:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);border:1px solid rgba(232,232,234,.18);border-bottom:0;overflow:hidden;cursor:zoom-in" style-hover="border-color:rgba(232,232,234,.36)">
                       <img src="{{it.img}}" alt="" loading="lazy" draggable="{{false}}" onError="{{imgErr}}" onLoad="{{it.ld}}" style="width:100%;height:100%;object-fit:cover;display:block">
                       <sc-if value="{{it.isReady}}" hint-placeholder-val="{{ false }}">
@@ -350,6 +355,10 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
                         <div style="position:absolute;inset:0;border:2px solid oklch(0.55 0.17 262);pointer-events:none"></div>
                         <div style="position:absolute;bottom:6px;left:6px;background:oklch(0.55 0.17 262);color:#fff;font-size:11px;font-weight:600;border-radius:4px;padding:2px 8px;pointer-events:none;max-width:86%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.tag}}</div>
                       </sc-if>
+                      <sc-if value="{{it.isRej}}" hint-placeholder-val="{{ false }}">
+                        <div style="position:absolute;inset:0;border:2px solid rgba(234,74,75,.5);pointer-events:none"></div>
+                        <div style="position:absolute;bottom:6px;left:6px;background:#3a1d1e;color:#ff9b9c;font-size:11px;font-weight:600;border-radius:4px;padding:2px 8px;pointer-events:none;max-width:86%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">✕ rejected</div>
+                      </sc-if>
                     </div>
                     <sc-if value="{{it.hasFig}}" hint-placeholder-val="{{ false }}"><a href="{{it.fig}}" target="_blank" rel="noopener" onClick="{{stopEv}}" aria-label="{{it.figAria}}" style="position:absolute;top:6px;right:6px;z-index:2;display:flex;align-items:center;background:rgba(11,12,14,.84);color:#eef0f3;border:1px solid rgba(232,232,234,.32);border-radius:4px;padding:{{pickPad}};font-size:11px;font-weight:700;text-decoration:none;min-height:{{pickH}}px" style-hover="background:rgba(11,12,14,.96);border-color:rgba(232,232,234,.5)">Figma ↗</a></sc-if>
                     <div style="display:flex;align-items:center;gap:6px;border:1px solid rgba(232,232,234,.1);border-top:1px solid rgba(232,232,234,.07);border-radius:0 0 4px 4px;background:#1e2125;padding:5px 7px;min-height:{{capH}}px">
@@ -357,6 +366,9 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
                         <div style="font-size:11px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3">{{it.name}}</div>
                         <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{it.subFg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.sub}}</div>
                       </div>
+                      <sc-if value="{{it.hasRej}}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{it.rej}}" aria-label="{{it.rejAria}}" style="flex:none;border:1px solid rgba(232,232,234,.16);border-radius:4px;padding:{{pickPad}};font-size:11px;font-weight:700;background:transparent;color:#8b8f96;white-space:nowrap;min-height:{{pickH}}px" style-hover="color:#ea4a4b;border-color:rgba(234,74,75,.55)">✕</button>
+                      </sc-if>
                       <button onClick="{{it.act}}" aria-label="{{it.actAria}}" style="flex:none;border:1px solid {{it.actLine}};border-radius:4px;padding:{{pickPad}};font-size:11px;font-weight:700;background:{{it.actBg}};color:{{it.actFg}};white-space:nowrap;min-height:{{pickH}}px">{{it.actLabel}}</button>
                     </div>
                   </div>
@@ -442,6 +454,12 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
             </sc-if>
             <sc-if value="{{lbSecFig}}" hint-placeholder-val="{{ false }}">
               <a href="{{lbFigHref}}" target="_blank" rel="noopener" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;text-decoration:none;display:block;color:#e8e8ea;text-align:center">Open in Figma ↗</a>
+            </sc-if>
+            <sc-if value="{{lbCanRestore}}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{lbRestore}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#e8e8ea;text-align:center;min-height:{{ctlH}}px">↩ Restore to the queue</button>
+            </sc-if>
+            <sc-if value="{{lbCanRej}}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{lbReject}}" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:center;min-height:{{ctlH}}px">✕ Reject — leaves the queue</button>
             </sc-if>
             <sc-if value="{{lbCanDropCand}}" hint-placeholder-val="{{ false }}">
               <button onClick="{{lbDropCand}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:left;min-height:{{ctlH}}px">Remove from Review</button>
@@ -594,7 +612,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <button ref="{{helpCloseRef}}" onClick="{{toggleHelp}}" aria-label="Close help" style="border:0;background:transparent;color:#8b8f96;font-size:16px;padding:6px 10px;min-width:44px;min-height:44px">✕</button>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:#c2c5cb;margin-bottom:14px">
-          <div><b>Library</b> is the raw Figma estate plus uploads. Pick anything promising into Review — or open a need on Ready and gather a shortlist for it.</div>
+          <div><b>Library</b> is the raw Figma estate plus uploads, opening on the judging queue: every asset awaits one verdict — <b>Pick</b> it into Review (Space) or <b>Reject</b> it out of the queue (X). Rejections are shared with the team and reversible under the Rejected filter. Or open a need on Ready and gather a shortlist for it.</div>
           <div><b>Review</b> holds candidates. Publish one to give it a need, a clear title and an optional usage note.</div>
           <div><b>Ready</b> is the destination: published assets organized by the concrete need they serve, with coverage per required format. Use one via <b>Open in Figma</b>.</div>
         </div>
@@ -614,9 +632,9 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
 class Component extends DCLogic {
   state = { phase:'load', view:'lib',
     needSel:'', readyQ:'',
-    fi:0, page:'', q:'', shape:'', pageQ:'',
+    fi:0, page:'', q:'', shape:'', pageQ:'', pickF:'un',
     gather:'', gDepth:0,
-    picks:{}, needs:[], uploads:[],
+    picks:{}, rejects:{}, rejQ:{}, needs:[], uploads:[],
     shared:{}, queue:{adds:{}, rms:[]}, who:'', sync:'off', snapTs:0, staleN:0, staleUp:0, staleHide:false, ext:'unknown',
     shown:160, gw:1100, rootW:1200,
     lb:null, mng:false, dlg:null, menu:false, help:false, toast:'', toastAct:null };
@@ -734,12 +752,18 @@ class Component extends DCLogic {
       const r=await fetch(this.BUCKET+'/picks',{signal:AbortSignal.timeout(5000)});
       if(r.ok){ shared=await r.json(); live=true; sync='live'; }
     } catch(e){}
+    let sharedRej=null;
     if(live){
       try{ const r=await fetch(this.BUCKET+'/categories',{signal:AbortSignal.timeout(5000)});
         if(r.ok) cats=(await r.json()).categories; }catch(e){}
       this._libIndex={};
       try{ const r=await fetch(this.BUCKET+'/library',{signal:AbortSignal.timeout(5000)});
         if(r.ok) this._libIndex=await r.json(); }catch(e){}
+      // rejections are a bucket capability, probed like the extended fields:
+      // an older Worker 404s here, and rejects then stay browser-local queued
+      try{ const r=await fetch(this.BUCKET+'/rejects',{signal:AbortSignal.timeout(5000)});
+        if(r.ok) sharedRej=await r.json(); }catch(e){}
+      this._rejCap=sharedRej!==null;
     } else {
       this._libIndex={};   // upload bytes live on the Worker — unreachable now
       let snap=null, bucket=null;
@@ -805,7 +829,18 @@ class Component extends DCLogic {
       picks[id]={...(picks[id]||{}), ...sv, shared:!!(picks[id]&&picks[id].shared)};
       if(sv.by && !picks[id].by) picks[id].by=sv.by;
     }
-    this.setState({phase:'ok', needs, uploads, picks, shared, queue, who, sync, snapTs, staleN, staleUp, staleHide:false, ext:extDetected?'yes':(this.state.ext||'unknown')}, ()=>this.save());
+    // --- rejections: shared baseline + local not-yet-delivered overlay ---
+    const rejQ={...((saved&&saved.rejQ)||{})};
+    const rejects={};
+    for(const id of Object.keys(sharedRej||{})){
+      if(!this._byQid.get(id) || rejQ[id]==='unreject') continue;
+      const s=sharedRej[id]||{};
+      rejects[id]={by:s.who||'', t:Date.parse(s.ts||'')||Date.now(), shared:true}; }
+    for(const id of Object.keys((saved&&saved.rejects)||{})){
+      if(!this._byQid.get(id) || rejects[id] || rejQ[id]==='unreject') continue;
+      rejects[id]={...saved.rejects[id], shared:false}; }
+    for(const id of Object.keys(rejects)) if(picks[id]) delete rejects[id];   // a pick always wins
+    this.setState({phase:'ok', needs, uploads, picks, rejects, rejQ, shared, queue, who, sync, snapTs, staleN, staleUp, staleHide:false, ext:extDetected?'yes':(this.state.ext||'unknown')}, ()=>{ this.save(); this.flushRejQ(); });
     clearInterval(this._poll);
     if(live) this._poll=setInterval(()=>this.refreshShared(), 30000);
   };
@@ -842,7 +877,67 @@ class Component extends DCLogic {
         picks[id]=upd; } }
       this.setState({picks, shared, ext});
     }catch(e){}
+    // rejections ride the same poll; the capability re-probes each tick so a
+    // Worker deployed mid-session starts syncing without a reload
+    try{ const r=await fetch(this.BUCKET+'/rejects',{signal:AbortSignal.timeout(5000)});
+      if(r.ok){ this._rejCap=true; const rj=await r.json();
+        const rejects={...this.state.rejects}; const Q=this.state.rejQ||{};
+        for(const id of Object.keys(rejects)){ const e=rejects[id];   // remote restores reach synced entries
+          if(e.shared && !rj[id] && Q[id]===undefined) delete rejects[id]; }
+        for(const id of Object.keys(rj)){
+          if(!this._byQid.get(id) || rejects[id] || this.state.picks[id] || Q[id]==='unreject') continue;
+          rejects[id]={by:rj[id].who||'', t:Date.parse(rj[id].ts||'')||Date.now(), shared:true}; }
+        this.setState({rejects}); } }catch(e){}
+    this.flushRejQ();
   };
+
+  /* --- triage rejections: shared like picks, queued while undeliverable --- */
+  postReject(qid, action){ // live best-effort; failures land in the retry queue
+    fetch(this.BUCKET+'/pick',{method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({who:this.state.who||'anon', id:qid, action})})
+      .then(r=>{ if(!r.ok){ this.queueRej(qid, action); return; }
+        const rejQ={...this.state.rejQ}; delete rejQ[qid];
+        const rejects={...this.state.rejects};
+        if(action==='reject'&&rejects[qid]) rejects[qid]={...rejects[qid], shared:true};
+        this.setState({rejQ, rejects},()=>this.save()); })
+      .catch(()=>this.queueRej(qid, action)); }
+  queueRej(qid, action){ const rejQ={...this.state.rejQ};
+    if(rejQ[qid]===action) return;
+    rejQ[qid]=action; this.setState({rejQ},()=>this.save()); }
+  flushRejQ(){ if(this.state.sync!=='live'||!this._rejCap) return;
+    const Q=this.state.rejQ||{};
+    for(const id of Object.keys(Q).slice(0,40)) this.postReject(id, Q[id]); }
+  reject(qid){
+    const c=this.card(qid); if(!c) return;
+    const S=this.state;
+    if(S.picks[qid] || S.rejects[qid]) return;
+    if(S.sync==='live' && !S.who && !this._whoAsked && !c.localOnly){
+      this._whoAsked=true; this._pendingRej=qid;
+      this.openDlg({kind:'who', then:'reject'}); return; }
+    const rejects={...S.rejects}; const rejQ={...S.rejQ};
+    rejects[qid]={by:S.who||'', t:Date.now()};
+    let msg='Rejected — out of the queue';
+    if(c.localOnly) msg='Rejected — uploads stay in this browser';
+    else if(S.sync==='live' && this._rejCap){ this.postReject(qid,'reject');
+      msg='Rejected — it leaves the whole team’s queue'; }
+    else { rejQ[qid]='reject';
+      msg=S.sync==='live'?'Rejected — shared once the team bucket supports rejections'
+        :'Rejected — the team bucket is unreachable, so this stays in this browser for now'; }
+    this.setState({rejects, rejQ},()=>this.save());
+    this.toast(msg, {label:'Undo', go:()=>this.unreject(qid)});
+  }
+  unreject(qid){
+    const S=this.state; if(!S.rejects[qid]) return;
+    const rejects={...S.rejects}; delete rejects[qid];
+    const rejQ={...S.rejQ}; const undelivered=rejQ[qid]==='reject';
+    delete rejQ[qid];
+    const c=this.card(qid);
+    if(c && !c.localOnly && !undelivered){
+      if(S.sync==='live' && this._rejCap) this.postReject(qid,'unreject');
+      else rejQ[qid]='unreject'; }
+    this.setState({rejects, rejQ},()=>this.save());
+    this.toast('Restored to the queue');
+  }
 
   buildFs(f, raw){
     const cards = raw.clusters.map(cl => { const w=cl.w||400, h=cl.h||300;
@@ -923,7 +1018,9 @@ class Component extends DCLogic {
         if(JSON.stringify(n.formats)!==JSON.stringify(e.formats||null)) o.formats=n.formats;
         if(n.note!==(e.note||'')) o.note=n.note;
         if(Object.keys(o).length) needsX[n.id]=o; } }
-    try{ localStorage.setItem('sfap_v9', JSON.stringify({picks, needsX, uploads:S.uploads, queue:S.queue, who:S.who})); }
+    const rejects={}; for(const id of Object.keys(S.rejects)){ const e=S.rejects[id];
+      if(!e.shared) rejects[id]=e; }        // synced rejections re-arrive from the bucket
+    try{ localStorage.setItem('sfap_v9', JSON.stringify({picks, needsX, uploads:S.uploads, queue:S.queue, who:S.who, rejects, rejQ:S.rejQ})); }
     catch(e){ if(!this._quotaWarned){ this._quotaWarned=true; this.toast('Device storage is full — changes kept for this session only'); } } }
 
   need(id){ return this.state.needs.find(n=>n.id===id)||null; }
@@ -1042,6 +1139,7 @@ class Component extends DCLogic {
     const t=[[],[],[],[]]; this._gTier={};
     const base=[...(this.fsets||[]).flatMap(fs=>fs.cards), ...this.libCards(), ...this.uploadCards()];
     for(const c of base){
+      if(S.rejects[c.qid] && !S.picks[c.qid]) continue;   // ruled out of the estate
       const hay=(c.name+' '+c.page).toLowerCase();
       if(q && !hay.includes(q)) continue;
       const feeder=pset.has(c.pnorm);
@@ -1211,6 +1309,11 @@ class Component extends DCLogic {
     if(S.sync==='live' && !S.who && !this._whoAsked && !c.localOnly){
       this._whoAsked=true; this._pendingPick=qid;
       this.openDlg({kind:'who', then:'pick'}); return; }
+    // picking a rejected asset restores it implicitly — the states are
+    // exclusive, and the Worker clears the rejection on "add" as well
+    if(S.rejects[qid]){ const rejects={...S.rejects}; const rejQ={...S.rejQ};
+      delete rejects[qid]; delete rejQ[qid];
+      this.setState({rejects, rejQ}); }
     const dest=this.effDest(S.gather||this.autoDest(c));
     p[qid]={by:S.who||'', dest, status:'cand', ab:'', at:0, note:'', name:'', exc:false, t:Date.now(), mod:true};
     const lbl=this.needLabel(dest);
@@ -1381,7 +1484,8 @@ class Component extends DCLogic {
     const then=this.state.dlg&&this.state.dlg.then;
     this.setState({who:v, dlg:null},()=>{ this.save(); this.restoreFocus();
       if(then==='submit') this.submitPicks();
-      else if(then==='pick'&&this._pendingPick){ const q=this._pendingPick; this._pendingPick=null; this.pick(q); } }); };
+      else if(then==='pick'&&this._pendingPick){ const q=this._pendingPick; this._pendingPick=null; this.pick(q); }
+      else if(then==='reject'&&this._pendingRej){ const q=this._pendingRej; this._pendingRej=null; this.reject(q); } }); };
 
   openLb(ids, idx, ctx){ if(!this.state.lb) this.pushFocus(); this._lbFocused=false; this.setState({lb:{ids,idx,mi:0,ctx}, mng:false}); }
   lbMove(d){ const lb=this.state.lb; if(!lb) return;
@@ -1715,11 +1819,74 @@ class Component extends DCLogic {
     const srcs=ok?this.sources():[];
     const fs=ok?this.fs():null;
     const gatherNeed=ok&&S.gather?this.need(S.gather):null;
-    let libSectionsRaw=[], gMoreDef=null;
+    let libSectionsRaw=[], gMoreDef=null, libStat=null, libEmptyHint=null;
     if(ok && S.view==='lib'){
       if(gatherNeed){ const gd=this.gatherData(gatherNeed);
         libSectionsRaw=gd.sections; this._libTotal=gd.total; gMoreDef=gd.more; }
-      else if(fs){ const items=this.filtered(); libSectionsRaw=[{title:'',sub:'',items}]; this._libTotal=items.length; }
+      else if(fs){
+        const all=this.filtered();
+        const pickedAll=all.filter(c=>S.picks[c.qid]);
+        const rejAll=all.filter(c=>!S.picks[c.qid]&&S.rejects[c.qid]);
+        // Pick-state filter: Unpicked (default) is the judging queue — every
+        // asset still awaiting a verdict; Picked shows every pick at once —
+        // Review candidates and Ready assets together; Rejected holds the
+        // passed-on assets for reconsideration; All keeps everything.
+        if(S.pickF==='picked'){
+          const pt=c=>S.picks[c.qid].t||0;
+          const rev=pickedAll.filter(c=>S.picks[c.qid].status==='cand').sort((a,b)=>pt(b)-pt(a));
+          const rdy=pickedAll.filter(c=>S.picks[c.qid].status==='ready').sort((a,b)=>pt(b)-pt(a));
+          if(rev.length) libSectionsRaw.push({title:'In Review',
+            sub:'candidates — publishing gives each a title and a need', items:rev});
+          if(rdy.length) libSectionsRaw.push({title:'On Ready',
+            sub:'published — grouped by need on the Ready screen', items:rdy});
+          this._libTotal=pickedAll.length;
+          libStat=this.fmt(pickedAll.length)+' picked';
+          libEmptyHint='Nothing picked in this scope yet — picking happens in the Unpicked queue.';
+        } else if(S.pickF==='rejected'){
+          const rt=c=>S.rejects[c.qid].t||0;
+          const items=[...rejAll].sort((a,b)=>rt(b)-rt(a));
+          if(items.length) libSectionsRaw.push({title:'Rejected', rejView:true,
+            sub:'consciously passed on — restore anytime; picking one clears the rejection', items});
+          this._libTotal=items.length;
+          libStat=this.fmt(items.length)+' rejected';
+          libEmptyHint='Nothing rejected in this scope.';
+        } else if(S.pickF==='un'){
+          const un=all.filter(c=>!S.picks[c.qid]&&!S.rejects[c.qid]);
+          libSectionsRaw=[{title:'',sub:'',items:un}]; this._libTotal=un.length;
+          libStat=this.fmt(un.length)+' to judge'
+            +(pickedAll.length?(' · '+this.fmt(pickedAll.length)+' picked'):'')
+            +(rejAll.length?(' · '+this.fmt(rejAll.length)+' rejected'):'');
+          if(!un.length&&(pickedAll.length||rejAll.length))
+            libEmptyHint='Everything here is judged — '+this.fmt(pickedAll.length)+' picked · '
+              +this.fmt(rejAll.length)+' rejected. Pick another page, or revisit them under Picked and Rejected.';
+        } else {
+          libSectionsRaw=[{title:'',sub:'',items:all}]; this._libTotal=all.length;
+        }
+      }
+    }
+    // In gather and in the All state, judged assets leave the browsing flow:
+    // picked and rejected sink out of every section into dimmed groups at the
+    // very bottom, so what's still unjudged stays in front. Unpicking and
+    // restoring work from there as usual.
+    if((S.gather||!S.pickF) && libSectionsRaw.some(sec=>sec.items.some(c=>S.picks[c.qid]||S.rejects[c.qid]))){
+      const pickedItems=[], rejItems=[], kept=[];
+      for(const sec of libSectionsRaw){
+        const un=sec.items.filter(c=>!S.picks[c.qid]&&!S.rejects[c.qid]);
+        for(const c of sec.items){ if(S.picks[c.qid]) pickedItems.push(c);
+          else if(S.rejects[c.qid]) rejItems.push(c); }
+        if(un.length) kept.push({...sec, items:un});
+      }
+      if(pickedItems.length){
+        pickedItems.sort((a,b)=>((S.picks[b.qid].t||0)-(S.picks[a.qid].t||0)));
+        kept.push({title:'Already picked', picked:true,
+          sub:'in Review or Ready — set aside here; the source stays available',
+          items:pickedItems}); }
+      if(rejItems.length){
+        rejItems.sort((a,b)=>((S.rejects[b.qid].t||0)-(S.rejects[a.qid].t||0)));
+        kept.push({title:'Rejected', picked:true, rejView:true,
+          sub:'passed on — restore from the card if one deserves another look',
+          items:rejItems}); }
+      libSectionsRaw=kept;
     }
     const targetH=narrow?190:(this.props.rowHeight ?? 195);
     const gwEff=Math.max(300,S.gw-2);
@@ -1727,6 +1894,7 @@ class Component extends DCLogic {
     const libSections=[];
     for(const sec of libSectionsRaw){
       if(quota<=0) break;
+      const dim=!!sec.picked;
       const items=sec.items.slice(0,quota); quota-=items.length;
       const rowsRaw=this.layout(items, gwEff, targetH, narrow);
       const rows=[]; let ri=0;
@@ -1734,10 +1902,12 @@ class Component extends DCLogic {
         for(const t of r){
           const c=t.c; const pk=S.picks[c.qid];
           const isReady=pk&&pk.status==='ready'; const isCand=pk&&pk.status==='cand';
+          const isRej=!pk&&!!S.rejects[c.qid];
           const dn=this.dispName(c,pk);
           let actLabel='＋ Pick', actBg='transparent', actFg='#e8e8ea', actLine='rgba(232,232,234,.24)', actAria='Pick '+dn+' for review';
           if(isReady){ actLabel='Open'; actBg='transparent'; actFg='#b5ff90'; actLine='#b5ff90'; actAria='Open '+dn+' — already on Ready'; }
           else if(isCand){ actLabel='✓'; actBg='transparent'; actFg='#8ab4ff'; actLine='oklch(0.45 0.09 262)'; actAria='Remove '+dn+' from Review'; }
+          else if(isRej){ actLabel='↩'; actBg='transparent'; actFg='#ff9b9c'; actLine='rgba(234,74,75,.4)'; actAria='Restore '+dn+' to the queue'; }
           let sub=c.page, subFg='#80848d';
           if(gatherNeed){ const ti=this._gTier?this._gTier[c.qid]:2;
             const reason=sec.reasons?this.gReason(c,gatherNeed,ti):'';
@@ -1746,17 +1916,23 @@ class Component extends DCLogic {
           else if(c.members.length>1) sub=c.page+' · ×'+c.members.length;
           tiles.push({ key:c.qid, img:c.url, name:dn, sub, subFg, hasFig:!c.custom, fig:c.fig, figAria:'Open '+dn+' in Figma — new tab',
             ld:(e)=>this.measure(c, e.target),
-            aria:dn+' — '+c.page+' — '+this.dims(c)+(isReady?' — on Ready':(isCand?' — in Review':''))+' — Enter zooms, Space picks',
+            aria:dn+' — '+c.page+' — '+this.dims(c)+(isReady?' — on Ready':(isCand?' — in Review':(isRej?' — rejected':'')))+' — Enter zooms, Space picks'+(!pk&&!isRej?', X rejects':''),
             w:Math.round(t.w*10)/10, h:Math.round(t.h),
-            isReady:!!isReady, isCand:!!isCand,
+            op:dim?'.45':'1',
+            isReady:!!isReady, isCand:!!isCand, isRej,
+            hasRej:!pk&&!isRej,
+            rej:(e)=>{ e.stopPropagation(); this.reject(c.qid); },
+            rejAria:'Reject '+dn+' — it leaves the queue',
             tag:isReady?('✓ '+this.needLabel(this.effDest(pk.dest))):(isCand?('→ '+(this.needLabel(this.effDest(pk.dest))||'no need yet')):''),
             actLabel, actBg, actFg, actLine, actAria,
             act:(e)=>{ e.stopPropagation();
               if(isReady) this.openLbAt(c.qid);
+              else if(isRej) this.unreject(c.qid);
               else this.pick(c.qid); },
             open:()=>this.openLbAt(c.qid),
             keyd:(e)=>{ if(e.key==='Enter'){ e.preventDefault(); this.openLbAt(c.qid); }
-              else if(e.key===' '){ e.preventDefault(); this.pick(c.qid); } } });
+              else if(e.key===' '){ e.preventDefault(); if(isRej) this.unreject(c.qid); else this.pick(c.qid); }
+              else if(e.key==='x'||e.key==='X'){ e.preventDefault(); if(!pk&&!isRej) this.reject(c.qid); } } });
         }
         rows.push({key:'r'+(ri++), tiles});
       }
@@ -1772,24 +1948,35 @@ class Component extends DCLogic {
       curAria:S.fi===i?'true':'false',
       go:()=>this.setState({fi:i, page:'', q:'', shape:'', pageQ:'', shown:160}) }));
     const pq=S.pageQ.trim().toLowerCase();
-    // pages you already harvested from carry a lit dot and picked/total
+    // pages you already judged from carry a lit dot and judged/total —
+    // the dot turns green once nothing on the page awaits a verdict
     const pickedByPage={}; let pickedInSrc=0;
+    const rejByPage={}; let rejInSrc=0;
     if(ok&&fs&&!fs.all&&!fs.custom){
       for(const pid of Object.keys(S.picks)){ const pc=this._byQid.get(pid);
         if(pc&&pc.srcIdx>=0&&(this.fsets||[])[pc.srcIdx]===fs){
-          pickedByPage[pc.page]=(pickedByPage[pc.page]||0)+1; pickedInSrc++; } } }
+          pickedByPage[pc.page]=(pickedByPage[pc.page]||0)+1; pickedInSrc++; } }
+      for(const rid of Object.keys(S.rejects)){ if(S.picks[rid]) continue;
+        const rc=this._byQid.get(rid);
+        if(rc&&rc.srcIdx>=0&&(this.fsets||[])[rc.srcIdx]===fs){
+          rejByPage[rc.page]=(rejByPage[rc.page]||0)+1; rejInSrc++; } } }
     const pageRows=((fs&&!fs.all&&!fs.custom)?[
-      {key:'__all', name:'All pages', total:fs.cards.length, picked:pickedInSrc, cur:!S.page,
+      {key:'__all', name:'All pages', total:fs.cards.length, judged:pickedInSrc+rejInSrc, cur:!S.page,
         go:()=>this.setState({page:'', shown:160})},
       ...fs.pageOrder.filter(pg=>!pq||pg.toLowerCase().includes(pq)).map(pg=>({
-        key:pg, name:pg||'(untitled)', total:fs.pageCt[pg], picked:pickedByPage[pg]||0, cur:S.page===pg,
+        key:pg, name:pg||'(untitled)', total:fs.pageCt[pg], judged:(pickedByPage[pg]||0)+(rejByPage[pg]||0), cur:S.page===pg,
         go:()=>this.setState({page:pg, shown:160}) }))]:[])
-      .map(x=>({...x, hasPicks:x.picked>0, pct:String(x.picked), ct:this.fmt(x.total),
-        curAria:x.cur?'true':'false'}));
+      .map(x=>{ const done=x.total>0&&x.judged>=x.total;
+        return {...x, hasPicks:x.judged>0, done, dotFg:done?'#b5ff90':'#8ab4ff',
+          pct:String(x.judged), ct:this.fmt(x.total), curAria:x.cur?'true':'false'}; });
     const shapeChips=[['','Any'],['square','1:1'],['landscape','Wide'],['portrait','Tall'],['banner','Banner']]
       .map(([id,label])=>({key:id||'any', label, on:S.shape===id?'true':'false',
         bg:S.shape===id?'#e4e7ec':'transparent', fg:S.shape===id?'#111214':'#8b8f96',
         go:()=>this.setState({shape:id, shown:160})}));
+    const pickChips=[['un','Unpicked'],['picked','Picked'],['rejected','Rejected'],['','All']]
+      .map(([id,label])=>({key:id||'all', label, on:S.pickF===id?'true':'false',
+        bg:S.pickF===id?'#e4e7ec':'transparent', fg:S.pickF===id?'#111214':'#8b8f96',
+        go:()=>this.setState({pickF:id, shown:160})}));
     const uploadsEmpty=!!(fs&&fs.custom&&!fs.cards.length&&!gatherNeed);
 
     // ---------- LIGHTBOX ----------
@@ -1797,6 +1984,7 @@ class Component extends DCLogic {
     if(lb){ const qid=lb.ids[lb.idx]; const c=this.card(qid);
       if(c){ const pk=S.picks[qid];
         const isReady=pk&&pk.status==='ready'; const isCand=pk&&pk.status==='cand';
+        const isRejLb=!pk&&!!S.rejects[qid]; const rejE=isRejLb?S.rejects[qid]:null;
         const mem=c.members.length?c.members:[{name:c.name,url:c.url}];
         const mi=Math.min(lb.mi,mem.length-1);
         const dest=pk?this.effDest(pk.dest):'';
@@ -1815,14 +2003,15 @@ class Component extends DCLogic {
           if(pk.shared) bits.push('shared pick');
           if(isReady && pk.at) bits.push('published '+this.fmtAgo(pk.at)+(pk.ab?(' by '+pk.ab):''));
           pickInfo=bits.join(' · '); }
+        else if(isRejLb) pickInfo='rejected'+(rejE.by?(' by '+rejE.by):'')+(rejE.shared?' · shared':'');
         const meta=c.srcIdx>=0?this.meta[c.srcIdx]:null;
         const fresh=meta?('captured '+this.fmtDate(meta.captured_at)+(meta.lastModified?(' · Figma modified '+this.fmtDate(meta.lastModified)):''))
           :(c.lib?('team upload'+(c.ts?(' · added '+this.fmtDate(c.ts)):'')):'upload — lives in this browser');
         lbv={ lbCounter:(lb.idx+1)+' / '+lb.ids.length, lbName:dn, lbAria:'Asset detail: '+dn,
           lbDir:narrow?'column':'row', lbPanelW:narrow?'100%':'300px', lbPanelAlign:narrow?'stretch':'center',
-          lbStatus: isReady?((offspec?'✓ READY · OFF-SPEC · ':'✓ READY · ')+destLbl):(isCand?(destLbl?('CANDIDATE → '+destLbl):'CANDIDATE — NO NEED YET'):'IN LIBRARY — NOT PICKED'),
-          lbStatusLine: isReady?(offspec?'#ffd166':'#b5ff90'):(isCand?'oklch(0.45 0.09 262)':'rgba(232,232,234,.25)'),
-          lbStatusFg: isReady?(offspec?'#ffd166':'#b5ff90'):(isCand?'#8ab4ff':'#c2c5cb'),
+          lbStatus: isReady?((offspec?'✓ READY · OFF-SPEC · ':'✓ READY · ')+destLbl):(isCand?(destLbl?('CANDIDATE → '+destLbl):'CANDIDATE — NO NEED YET'):(isRejLb?'✕ REJECTED — OUT OF THE QUEUE':'IN QUEUE — AWAITING A VERDICT')),
+          lbStatusLine: isReady?(offspec?'#ffd166':'#b5ff90'):(isCand?'oklch(0.45 0.09 262)':(isRejLb?'rgba(234,74,75,.5)':'rgba(232,232,234,.25)')),
+          lbStatusFg: isReady?(offspec?'#ffd166':'#b5ff90'):(isCand?'#8ab4ff':(isRejLb?'#ff9b9c':'#c2c5cb')),
           lbHasFit:hasFit, lbFitLine:fitLine, lbFitFg:fitFg,
           lbDims:c.w?(Math.round(c.w)+'×'+Math.round(c.h)+' px · '+this.ratioLabel(c.ar)):'size unknown',
           lbSrc:c.lib?('Team upload · by '+(c.who||'unknown')):(c.srcShort+' · '+c.page),
@@ -1838,6 +2027,8 @@ class Component extends DCLogic {
           lbPrimPick:!pk,
           lbSecFig:!c.custom&&isCand, lbHasFig:!c.custom, lbFigHref:c.fig||'#',
           lbCanDropCand:!!isCand,
+          lbCanRej:!pk&&!isRejLb, lbReject:(e)=>{e.stopPropagation(); this.reject(qid);},
+          lbCanRestore:!!isRejLb, lbRestore:(e)=>{e.stopPropagation(); this.unreject(qid);},
           lbCanLibRm:!!c.lib&&S.sync==='live',
           lbLibRm:(e)=>{e.stopPropagation(); this.libRemove(qid);},
           lbCanMng:!!isReady, lbMngOpen:!!isReady&&S.mng,
@@ -1986,12 +2177,12 @@ class Component extends DCLogic {
       pageSelectEl:(fs&&!fs.all&&!fs.custom)?this.sel(S.page,(e)=>this.setState({page:e.target.value, shown:160}),
         [['','All pages'],...fs.pageOrder.map(p=>[p,p])],'Page',150):null,
       crumb:fs?(fs.short+(S.page?(' — '+S.page):'')):'',
-      statLine:this.fmt(this._libTotal||0)+' groups',
+      statLine:libStat!==null?libStat:(this.fmt(this._libTotal||0)+' groups'),
       libQ:S.q, onLibQ:(e)=>this.setState({q:e.target.value, shown:160, gDepth:S.gather?Math.max(1,S.gDepth):S.gDepth}),
       libPh:narrow?'Search…':'Search name or page…  ( / )',
       gatherPh:narrow?'Search…':'Search within results…  ( / )',
       libFilters:!uploadsEmpty,
-      shapeChips, isUploads:!!(fs&&fs.custom)&&!uploadsEmpty,
+      shapeChips, pickChips, isUploads:!!(fs&&fs.custom)&&!uploadsEmpty,
       uploadClick:()=>{ if(this.fileEl) this.fileEl.click(); },
       onFiles:this.onFiles, fileRef:this.fileRef,
       stageDragOver:this.stageDragOver, stageDrop:this.stageDrop,
@@ -2005,7 +2196,7 @@ class Component extends DCLogic {
         ?'Drop images anywhere here, or use Add images. Uploads go to the shared team library — everyone sees them.'
         :'Drop images anywhere here, or use Add images. The team bucket is unreachable, so uploads stay in this browser.',
       noResults:ok&&S.view==='lib'&&!uploadsEmpty&&(this._libTotal||0)===0,
-      noResultsHint:gatherNeed?'No matches — clear the search or show more of the library below.':'Nothing matches — clear the search or shape filter.',
+      noResultsHint:gatherNeed?'No matches — clear the search or show more of the library below.':(libEmptyHint||'Nothing matches — clear the search or shape filter.'),
       libSections,
       imgErr:this.imgErr, gridRef:this.gridRef, sentinelRef:this.sentinelRef,
       libSearchRef:this.libSearchRef, libSearchRef2:this.libSearchRef2, readySearchRef:this.readySearchRef,
@@ -2031,7 +2222,8 @@ class Component extends DCLogic {
       confirmGo:()=>{ const go=dlg.go; this.setState({dlg:null}); this.restoreFocus(); if(go) go(); },
       confirmCancelRef:this.confirmCancelRef,
       dlgCancel:()=>{ const d=S.dlg; this.setState({dlg:null}); this.restoreFocus();
-        if(d&&d.kind==='who'&&d.then==='pick'&&this._pendingPick){ const q=this._pendingPick; this._pendingPick=null; this.pick(q); } },
+        if(d&&d.kind==='who'&&d.then==='pick'&&this._pendingPick){ const q=this._pendingPick; this._pendingPick=null; this.pick(q); }
+        else if(d&&d.kind==='who'&&d.then==='reject'&&this._pendingRej){ const q=this._pendingRej; this._pendingRej=null; this.reject(q); } },
       toastShow:!!S.toast, toastMsg:S.toast,
       toastHasAct:!!S.toastAct, toastActLabel:S.toastAct?S.toastAct.label:'',
       toastPe:S.toastAct?'auto':'none', toastPad:S.toastAct?'7px 8px 7px 18px':'9px 18px',
