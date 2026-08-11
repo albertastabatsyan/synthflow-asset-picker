@@ -4,7 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Synthflow Asset Picker</title>
+<script>
+/* Local copies of the pinned React UMD builds (SRI-verified against the
+   hashes in support.js) — the app must not depend on a CDN at runtime.
+   support.js honours this map via window.__resources. */
+window.__resources={
+  'https://unpkg.com/react@18.3.1/umd/react.production.min.js':'./react.production.min.js',
+  'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js':'./react-dom.production.min.js'};
+</script>
 <script src="./support.js"></script>
+<script>
+/* Boot watchdog: a blank page is never an acceptable failure mode. */
+(function(){
+  function fail(msg){ if(document.getElementById('sf-boot-error')) return;
+    var d=document.createElement('div'); d.id='sf-boot-error';
+    d.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#141210;color:#ede9e0;font-family:system-ui,sans-serif;z-index:99999;text-align:center;padding:24px';
+    d.innerHTML='<div style="max-width:420px"><div style="font-size:16px;font-weight:700;margin-bottom:8px">The Asset Picker didn’t start</div><div style="font-size:13px;color:#a49e91;margin-bottom:16px">'+msg+'</div><button onclick="location.reload()" style="background:#5a54d4;color:#fff;border:0;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer">Reload</button></div>';
+    document.body.appendChild(d); }
+  window.addEventListener('load', function(){
+    setTimeout(function(){
+      if(!window.React||!window.ReactDOM) fail('The app runtime didn’t load. Check the connection and reload.');
+      else if(!document.getElementById('dc-root')) fail('The app failed to boot — reloading usually fixes it.');
+    }, 6000); });
+})();
+</script>
 </head>
 <body>
 <x-dc>
@@ -326,7 +349,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
                 <sc-for list="{{row.tiles}}" as="it" hint-placeholder-count="4">
                   <div data-hov="1" style="flex:none;width:{{it.w}}px;display:flex;flex-direction:column;gap:0;position:relative">
                     <div role="button" tabIndex="0" aria-label="{{it.aria}}" onClick="{{it.open}}" onKeyDown="{{it.keyd}}" style="position:relative;width:100%;height:{{it.h}}px;border-radius:10px 10px 0 0;background:#efece5;border:1px solid rgba(236,231,221,.14);border-bottom:0;overflow:hidden;cursor:zoom-in;transition:border-color .15s" style-hover="border-color:rgba(236,231,221,.36)">
-                      <img class="hvi" src="{{it.img}}" alt="" loading="lazy" draggable="{{false}}" onError="{{imgErr}}" style="width:100%;height:100%;object-fit:cover;display:block">
+                      <img class="hvi" src="{{it.img}}" alt="" loading="lazy" draggable="{{false}}" onError="{{imgErr}}" onLoad="{{it.ld}}" style="width:100%;height:100%;object-fit:cover;display:block">
                       <sc-if value="{{it.isReady}}" hint-placeholder-val="{{ false }}">
                         <div style="position:absolute;inset:0;border:2px solid #a8730a;pointer-events:none"></div>
                         <div style="position:absolute;bottom:6px;left:6px;background:#a8730a;color:#fff;font-size:10px;font-weight:600;border-radius:999px;padding:2px 8px;pointer-events:none;max-width:86%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.tag}}</div>
@@ -431,9 +454,12 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
             <sc-if value="{{lbCanDropCand}}" hint-placeholder-val="{{ false }}">
               <button onClick="{{lbDropCand}}" style="border:1px solid rgba(236,231,221,.15);background:#2b2723;border-radius:8px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#e5786b;text-align:left;min-height:{{ctlH}}px">Remove from Review</button>
             </sc-if>
+            <sc-if value="{{lbCanLibRm}}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{lbLibRm}}" style="border:1px solid rgba(229,120,107,.4);background:#2b2723;border-radius:8px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#e5786b;text-align:left;min-height:{{ctlH}}px">Remove from team library…</button>
+            </sc-if>
             <sc-if value="{{lbHasFig}}" hint-placeholder-val="{{ true }}">
               <div style="display:flex;gap:6px">
-                <button onClick="{{lbDlQuiet}}" style="flex:1;border:1px solid rgba(236,231,221,.15);background:#2b2723;border-radius:8px;padding:9px 10px;font-size:11.5px;font-weight:500;color:#c9c3b8;min-height:{{ctlH}}px">Full render ↗</button>
+                <button onClick="{{lbDlQuiet}}" style="flex:1;border:1px solid rgba(236,231,221,.15);background:#2b2723;border-radius:8px;padding:9px 10px;font-size:11.5px;font-weight:500;color:#c9c3b8;min-height:{{ctlH}}px">Best quality ↓</button>
                 <button onClick="{{lbCopyLink}}" style="flex:1;border:1px solid rgba(236,231,221,.15);background:#2b2723;border-radius:8px;padding:9px 10px;font-size:11.5px;font-weight:500;color:#c9c3b8;min-height:{{ctlH}}px">Copy link</button>
               </div>
             </sc-if>
@@ -592,14 +618,14 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
   <input type="file" ref="{{fileRef}}" onChange="{{onFiles}}" multiple accept="image/*" aria-hidden="true" style="display:none">
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;rowHeight&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:195,&quot;min&quot;:150,&quot;max&quot;:300,&quot;step&quot;:5,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Grid&quot;},&quot;seedTeamPicks&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Data&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;rowHeight&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:195,&quot;min&quot;:150,&quot;max&quot;:300,&quot;step&quot;:5,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Grid&quot;}}">
 class Component extends DCLogic {
   state = { phase:'load', view:'ready',
     needSel:'', readyQ:'',
     fi:0, page:'', q:'', shape:'', pageQ:'',
     gather:'', gDepth:0,
     picks:{}, needs:[], uploads:[],
-    shared:{}, queue:{adds:{}, rms:[]}, who:'', sync:'off', snapTs:0, staleN:0, staleHide:false, ext:'unknown',
+    shared:{}, queue:{adds:{}, rms:[]}, who:'', sync:'off', snapTs:0, staleN:0, staleUp:0, staleHide:false, ext:'unknown',
     shown:160, gw:1100, rootW:1200,
     lb:null, mng:false, dlg:null, menu:false, help:false, toast:'' };
 
@@ -697,7 +723,11 @@ class Component extends DCLogic {
     if(live){
       try{ const r=await fetch(this.BUCKET+'/categories',{signal:AbortSignal.timeout(5000)});
         if(r.ok) cats=(await r.json()).categories; }catch(e){}
+      this._libIndex={};
+      try{ const r=await fetch(this.BUCKET+'/library',{signal:AbortSignal.timeout(5000)});
+        if(r.ok) this._libIndex=await r.json(); }catch(e){}
     } else {
+      this._libIndex={};   // upload bytes live on the Worker — unreachable now
       let snap=null, bucket=null;
       try{ const r=await fetch(this.REMOTE+'snapshots/picks.json',{cache:'no-store'}); if(r.ok) snap=await r.json(); }catch(e){}
       try{ const r=await fetch(this.REMOTE+'bucket.json',{cache:'no-store'}); if(r.ok) bucket=await r.json(); }catch(e){}
@@ -725,19 +755,22 @@ class Component extends DCLogic {
     this._needs=needs;
     const uploads=(saved&&saved.uploads)||[];
     this.refreshIndex(uploads);
+    const who=(saved&&saved.who)||localStorage.getItem('picker_who')||'';
     const q0=(saved&&saved.queue)||{adds:{},rms:[]};
-    const qAdds={}; for(const id of Object.keys(q0.adds||{})) if(!shared[id]) qAdds[id]=q0.adds[id];
-    const qRms=(q0.rms||[]).filter(id=>!!shared[id]);
+    // a queued change is merged once *your* name reflects it in the shared
+    // bucket — entry existence alone can't tell for multi-picker assets
+    const mine=id=>!!(shared[id]&&shared[id].pickers&&(who?shared[id].pickers[who]!==undefined:true));
+    const qAdds={}; for(const id of Object.keys(q0.adds||{})) if(!mine(id)) qAdds[id]=q0.adds[id];
+    const qRms=(q0.rms||[]).filter(id=>!!shared[id]&&(who?mine(id):true));
     const qMerged=(Object.keys(q0.adds||{}).length+(q0.rms||[]).length)-(Object.keys(qAdds).length+qRms.length);
     const queue={adds:qAdds, rms:qRms, sentAt:(Object.keys(qAdds).length||qRms.length)?(q0.sentAt||0):0};
     if(qMerged>0 && q0.sentAt) setTimeout(()=>this.toast(qMerged+' submitted change'+(qMerged===1?'':'s')+' merged into the shared bucket'),800);
-    const who=(saved&&saved.who)||'';
     // --- picks: shared baseline, then local overlay ---
     const rmSet=new Set(queue.rms);
-    let staleN=0, extDetected=false; const picks={};
+    let staleN=0, staleUp=0, extDetected=false; const picks={};
     for(const id of Object.keys(shared)){
       if(rmSet.has(id)) continue;
-      if(!this._byQid.get(id)){ staleN++; continue; }
+      if(!this._byQid.get(id)){ if(id.startsWith('custom~')) staleUp++; else staleN++; continue; }
       const s=shared[id]; const names=Object.keys(s.pickers||{});
       let t=0; for(const w of names){ const x=Date.parse(s.pickers[w]); if(x&&x>t) t=x; }
       const legacyReady=!!s.fin&&s.status===undefined;
@@ -748,25 +781,37 @@ class Component extends DCLogic {
         if(s.title) picks[id].name=s.title; if(s.note) picks[id].note=s.note;
         if(s.status==='ready'){ picks[id].status='ready'; picks[id].at=t||Date.now(); picks[id].ab=names[0]||''; } }
     }
-    let savedPicks=saved&&saved.picks;
-    if(!savedPicks && (this.props.seedTeamPicks ?? false)) savedPicks=this.buildSeeds(needs);
+    const savedPicks=saved&&saved.picks;
     for(const id of Object.keys(savedPicks||{})){
       if(!this._byQid.get(id)) continue;
-      picks[id]={...(picks[id]||{}), ...savedPicks[id], shared:!!(picks[id]&&picks[id].shared)};
-      if(savedPicks[id].by && !picks[id].by) picks[id].by=savedPicks[id].by;
+      const sv=savedPicks[id];
+      // a saved copy of a shared pick with no pending local edit is just a
+      // synced snapshot — the shared bucket stays truth for it
+      if(extDetected && picks[id] && !sv.mod) continue;
+      picks[id]={...(picks[id]||{}), ...sv, shared:!!(picks[id]&&picks[id].shared)};
+      if(sv.by && !picks[id].by) picks[id].by=sv.by;
     }
-    this.setState({phase:'ok', needs, uploads, picks, shared, queue, who, sync, snapTs, staleN, staleHide:false, ext:extDetected?'yes':(this.state.ext||'unknown')}, ()=>this.save());
+    this.setState({phase:'ok', needs, uploads, picks, shared, queue, who, sync, snapTs, staleN, staleUp, staleHide:false, ext:extDetected?'yes':(this.state.ext||'unknown')}, ()=>this.save());
     clearInterval(this._poll);
     if(live) this._poll=setInterval(()=>this.refreshShared(), 30000);
   };
 
   refreshShared = async () => {
+    try{ const lr=await fetch(this.BUCKET+'/library',{signal:AbortSignal.timeout(5000)});
+      if(lr.ok){ const lib=await lr.json();
+        if(JSON.stringify(lib)!==JSON.stringify(this._libIndex||{})){
+          this._libIndex=lib; this.refreshIndex(); } } }catch(e){}
     try{ const r=await fetch(this.BUCKET+'/picks',{signal:AbortSignal.timeout(5000)});
       if(!r.ok) return; const shared=await r.json();
       const picks={...this.state.picks};
-      for(const id of Object.keys(shared)){
+      const qAdds=this.state.queue.adds;
+      for(const id of Object.keys(picks)){ const p=picks[id];   // remote removals reach synced entries
+        if(p.shared && !p.mod && !shared[id] && qAdds[id]===undefined) delete picks[id]; }
+      let ext=this.state.ext;
+      for(const id of Object.keys(shared)){ const s=shared[id];
+        if(ext!=='yes'&&(s.title!==undefined||s.status!==undefined)) ext='yes';
         if(!this._byQid.get(id) || picks[id]) continue;
-        const s=shared[id]; const names=Object.keys(s.pickers||{});
+        const names=Object.keys(s.pickers||{});
         const legacyReady=!!s.fin&&s.status===undefined;
         picks[id]={by:names.join(', '), dest:this.needExists(s.cat)?s.cat:'', status:legacyReady?'ready':'cand',
           ab:legacyReady?(names[0]||''):'', at:legacyReady?Date.now():0,
@@ -774,14 +819,14 @@ class Component extends DCLogic {
       for(const id of Object.keys(shared)){ const s=shared[id], p=picks[id];
         if(!p||p.mod||s.status!==undefined||!s.fin) continue;
         picks[id]={...p,status:'ready',at:p.at||Date.now(),ab:p.ab||Object.keys(s.fin||{})[0]||''}; }
-      if(this.state.ext==='yes'){ for(const id of Object.keys(shared)){ const s=shared[id]; const p=picks[id];
+      if(ext==='yes'){ for(const id of Object.keys(shared)){ const s=shared[id]; const p=picks[id];
         if(!p||p.mod) continue; const upd={...p};
         if(s.title) upd.name=s.title; if(s.note) upd.note=s.note;
         if(s.status==='ready'&&p.status!=='ready'){ upd.status='ready'; upd.at=upd.at||Date.now(); }
         if(s.status==='cand') upd.status='cand';
         if(s.cat!==undefined&&this.needExists(s.cat)) upd.dest=s.cat;
         picks[id]=upd; } }
-      this.setState({picks, shared});
+      this.setState({picks, shared, ext});
     }catch(e){}
   };
 
@@ -799,18 +844,35 @@ class Component extends DCLogic {
   }
   uploadCards(uploads){ return (uploads||this.state.uploads).map(u=>({ qid:u.id, nid:'', name:u.name,
     page:'Uploads', pnorm:'uploads', w:u.w||800, h:u.h||600, ar:(u.w||800)/(u.h||600),
-    url:u.data, fig:'', srcShort:'Uploads', srcIdx:-1, custom:true, members:[] })); }
+    url:u.data, fig:'', srcShort:'Uploads', srcIdx:-1, custom:true, localOnly:true, members:[] })); }
+  /* Shared Custom library (Worker-owned, live only): every teammate sees the
+     same uploads; ids are "custom~<up_id>" like the legacy picker wrote. */
+  libCards(){ const lib=this._libIndex||{}; const dims=this._libDims||{};
+    return Object.keys(lib).map(id=>{ const m=lib[id]||{}; const d=dims[id]||{};
+      const w=+m.w||d.w||0, h=+m.h||d.h||0;
+      return { qid:'custom~'+id, nid:'', name:m.name||'upload', page:'Uploads', pnorm:'uploads',
+        w, h, ar:(w&&h)?w/h:4/3, url:this.BUCKET+'/upload/'+id, fig:'',
+        srcShort:'Uploads', srcIdx:-1, custom:true, lib:true, upId:id,
+        who:m.who||'', ts:m.ts||'', members:[] }; }); }
+  /* Legacy library entries carry no dimensions — adopt them from the first
+     rendered image so fit checks and layout become truthful. */
+  measure(c, img){ if(!c||!c.lib||c.w||!img||!img.naturalWidth) return;
+    (this._libDims||(this._libDims={}))[c.upId]={w:img.naturalWidth, h:img.naturalHeight};
+    this.refreshIndex(); this.setState({}); }
   refreshIndex(uploads){
     this._byQid = new Map();
     for(const fs of (this.fsets||[])) for(const c of fs.cards) this._byQid.set(c.qid, c);
+    for(const c of this.libCards()) this._byQid.set(c.qid, c);
     for(const c of this.uploadCards(uploads)) this._byQid.set(c.qid, c);
   }
   card(qid){ return this._byQid ? this._byQid.get(qid) : null; }
 
   fitFormat(c,f){ const t=f[0]/f[1]; return Math.abs(c.ar-t)/t<=0.035 && c.w>=f[0]*0.98; }
-  fit(c, n){ if(!n || !n.formats || !n.formats.length) return {ok:true, free:true, label:''};
+  fit(c, n){ if(!c || !c.w || !c.h) return {ok:true, free:true, label:''};   // unknown size: no fit claims
+    if(!n || !n.formats || !n.formats.length) return {ok:true, free:true, label:''};
     for(const f of n.formats){ if(this.fitFormat(c,f)) return {ok:true, free:false, label:f[0]+'×'+f[1]}; }
     return {ok:false, free:false, label:''}; }
+  dims(c){ return (c&&c.w&&c.h)?(Math.round(c.w)+'×'+Math.round(c.h)):'size unknown'; }
   fmtList(n){ return (n&&n.formats)?n.formats.map(f=>f[0]+'×'+f[1]).join(' / '):''; }
   fmtName(f){ const p=this.PRESETS.find(p=>p[0]===f[0]&&p[1]===f[1]);
     return f[0]+'×'+f[1]+(p?(' '+p[2]):''); }
@@ -832,65 +894,11 @@ class Component extends DCLogic {
     return {chips, missing,
       state: covered===chips.length?'ok':(covered>0||items.length?'part':'none')}; }
 
-  grab(fi, page, o){ o=o||{}; const fs=this.fsets[fi]; if(!fs) return [];
-    const p=this.norm(page);
-    return fs.cards.filter(c=> c.pnorm===p
-      && (!o.arr || (c.ar>=o.arr[0] && c.ar<=o.arr[1]))
-      && (!o.minW || c.w>=o.minW)); }
-  buildSeeds(needs){
-    const P={}; const now=Date.now(); let k=0; const NAMES=['Maya','Jonas','Lena'];
-    const nb={}; for(const n of needs) nb[n.id]=n;
-    const N={social:'c_msmbudplegal', blog:'c_msmbudyxm7hc', video:'c_msmbuf2efxek',
-      changelog:'c_msmbuflqzqgb', webinar:'c_msmbuieirjfv', email:'c_msmbuhvpjt7o',
-      integration:'c_msmbufcrgdt6', event:'c_msmbui4tspgz', deck:'c_msmbuhmxbev8',
-      onepager:'c_msmbug2j8dkn', story:'c_msmbuhe3sdyj', brand:'c_msmbuj63d9d6'};
-    const fitsFor=(id,extra)=>{ const need=nb[N[id]]; if(!need) return [];
-      const pset=new Set((need.pages||[]).map(p=>this.norm(p)));
-      const out=[]; for(const fs of this.fsets) for(const c of fs.cards){
-        if(!pset.has(c.pnorm) || P[c.qid]) continue;
-        if(!this.fit(c,need).ok) continue;
-        if(extra && !extra(c)) continue; out.push(c); } return out; };
-    const add=(cards,n,o)=>{ o=o||{}; let j=0; const names=o.names||[];
-      const dest=o.dest?N[o.dest]:'';
-      for(const c of cards){ if(j>=n) break; if(P[c.qid]) continue;
-        const ready=!!o.ready; const need=nb[dest];
-        let nm = names[j]||'';
-        if(ready && !nm && need) nm = need.label+' — '+Math.round(c.w)+'×'+Math.round(c.h);
-        P[c.qid]={by:NAMES[k%3], dest, status:ready?'ready':'cand',
-          ab:ready?NAMES[(k+1)%3]:'', at:ready?now-(o.agoH||24)*3600e3-j*7200e3:0,
-          note:(j===0&&o.note)||'', name:nm, exc:false, t:now-(k+1)*3400e3, seed:true};
-        k++; j++; } };
-    add(fitsFor('social',c=>c.pnorm==='whatsapp integration'),2,{dest:'social',ready:1,names:['WhatsApp integration launch post','WhatsApp integration follow-up post'],note:'Integration launch post — pair with launch copy.',agoH:26});
-    add(fitsFor('social'),1,{dest:'social',ready:1,names:['Square campaign post'],agoH:120});
-    add(fitsFor('social'),1,{dest:'social'});
-    add(this.grab(0,'june campaign',{arr:[2.1,2.4]}),1,{dest:'social'});
-    add(fitsFor('blog'),2,{dest:'blog',ready:1,names:['Newsroom article header','Blog cover — wide'],note:'Keep the title zone clear — headlines are applied in Webflow.',agoH:2});
-    add(fitsFor('blog'),1,{dest:'blog'});
-    add(fitsFor('video'),2,{dest:'video',ready:1,names:['Media center thumbnail','Video intro card'],agoH:30});
-    add(fitsFor('video'),1,{dest:'video'});
-    add(fitsFor('changelog',c=>c.ar>1.5),1,{dest:'changelog',ready:1,names:['Changelog header — wide'],agoH:50});
-    add(fitsFor('changelog'),1,{dest:'changelog'});
-    add(fitsFor('webinar'),1,{dest:'webinar',ready:1,names:['Webinar promo cover'],agoH:400});
-    add(fitsFor('webinar'),1,{dest:'webinar'});
-    add(this.grab(0,'email templates',{arr:[1.9,5],minW:1200}),1,{dest:'email',ready:1,names:['Newsletter header banner'],agoH:150});
-    add(this.grab(0,'partner badge',{arr:[3.5,6.5]}),2,{dest:'integration',ready:1,names:['Partner-page lockup','Partner lockup — alternate'],note:'Approved lockup — do not restyle; legal reviews these.',agoH:500});
-    add(this.grab(0,'claude marketplace',{minW:300}),1,{dest:'integration'});
-    add(this.grab(0,'cce backwall',{minW:800}),1,{dest:'event',ready:1,names:['CCE backwall art'],agoH:700});
-    add(this.grab(0,'vivatech booth header',{}),1,{dest:'event'});
-    add(fitsFor('deck'),1,{dest:'deck',ready:1,names:['Brand slide background'],agoH:240});
-    add(this.grab(1,'sales materials & one-pagers',{arr:[.6,.8],minW:1000}),1,{dest:'onepager',ready:1,names:['One-pager cover'],agoH:320});
-    add(this.grab(1,'sales materials & one-pagers',{arr:[.6,.8],minW:1000}),1,{dest:'onepager'});
-    add(this.grab(1,'success stories',{arr:[.95,1.05],minW:700}),1,{dest:'story',ready:1,names:['Customer quote card'],agoH:90});
-    add(this.grab(0,'profile photo + banner',{arr:[3.5,4.5]}),1,{dest:'brand',ready:1,names:['LinkedIn profile banner'],note:'Current profile banner.',agoH:1000});
-    add(this.grab(0,'bell illustration',{minW:500}),1,{dest:'brand'});
-    add(this.grab(0,'new landing page',{arr:[1.5,2]}),1,{});
-    add(this.grab(1,'cover',{}),1,{});
-    return P;
-  }
-
   save(){ const S=this.state;
     const picks={}; for(const id of Object.keys(S.picks)){ const e=S.picks[id];
-      if(!e.shared || e.seed || e.mod || e.status==='ready' || e.name || e.note) picks[id]=e; }
+      // synced shared entries need no local copy once the bucket stores the
+      // extended fields; keep local-only picks and pending offline edits
+      if(!e.shared || e.mod || (S.ext!=='yes' && (e.status==='ready' || e.name || e.note))) picks[id]=e; }
     const needsX={};
     for(const n of S.needs){ const e=this.ENRICH[n.id]||{};
       if(!n.sharedCat) needsX[n.id]={local:true,label:n.label,spec:n.spec,formats:n.formats,note:n.note};
@@ -908,11 +916,49 @@ class Component extends DCLogic {
   needExists(id){ return (this._needs||this.state.needs).some(n=>n.id===id); }
   needLabel(id){ const n=this.need(id); return n?n.label:''; }
   effDest(d){ return this.need(d)?d:''; }
+  isSharedNeed(id){ const n=this.need(id); return !!(n&&n.sharedCat); }
+  /* Confirmed live write: drop the pending-edit flag so remote updates flow
+     to this entry again — but only if it still matches what was posted. */
+  markSynced(qid, sent){ const e=this.state.picks[qid]; if(!e) return;
+    if((this.effDest(e.dest)||'')!==(sent.dest||'')) return;
+    if((e.name||'')!==(sent.name||'')) return;
+    if((e.note||'')!==(sent.note||'')) return;
+    if((e.status||'')!==(sent.status||'')) return;
+    const p={...this.state.picks}; p[qid]={...e, mod:false, shared:true};
+    this.setState({picks:p},()=>this.save()); }
+  /* Live mode makes a browser-local need real for the team: create the shared
+     category (adopting an existing same-name one), then move every local
+     reference from the local id to the shared id. Returns the shared id. */
+  async promoteNeed(id){
+    const n=this.need(id); if(!n||n.sharedCat||this.state.sync!=='live') return null;
+    let list=null;
+    try{ const r=await fetch(this.BUCKET+'/categories-edit',{method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'add', label:n.label}), signal:AbortSignal.timeout(5000)});
+      const j=await r.json().catch(()=>({}));
+      if(Array.isArray(j.categories)) list=j.categories;
+    }catch(e){}
+    if(!list){ try{ const g=await fetch(this.BUCKET+'/categories',{signal:AbortSignal.timeout(5000)});
+      if(g.ok){ const gj=await g.json().catch(()=>({})); if(Array.isArray(gj.categories)) list=gj.categories; } }catch(e){} }
+    const hit=(list||[]).find(([,l])=>String(l).toLowerCase()===n.label.toLowerCase());
+    if(!hit) return null;
+    const nid=hit[0];
+    const needs=this.needExists(nid)
+      ? this.state.needs.filter(x=>x.id!==id)
+      : this.state.needs.map(x=>x.id===id?{...x, id:nid, sharedCat:true}:x);
+    const picks={}; for(const qid of Object.keys(this.state.picks)){ const e=this.state.picks[qid];
+      picks[qid]=e.dest===id?{...e,dest:nid}:e; }
+    this._needs=needs;
+    this.setState({needs, picks,
+      needSel:this.state.needSel===id?nid:this.state.needSel,
+      gather:this.state.gather===id?nid:this.state.gather},()=>this.save());
+    return nid;
+  }
   autoDest(card){ const p=card.pnorm;
     for(const n of this.state.needs) if(n.pages && n.pages.some(pg=>this.norm(pg)===p)) return n.id;
     return ''; }
 
-  sources(){ const up=this.uploadCards(), sets=this.fsets||[];
+  sources(){ const up=[...this.libCards(), ...this.uploadCards()], sets=this.fsets||[];
     return [ {key:'all', short:'All sources', all:true,
         cards:[...sets.flatMap(fs=>fs.cards), ...up], pageOrder:[], pageCt:{}},
       ...sets,
@@ -980,7 +1026,7 @@ class Component extends DCLogic {
     const kws=need.kw||[]; const pset=new Set((need.pages||[]).map(p=>this.norm(p)));
     const hasF=!!(need.formats&&need.formats.length);
     const t=[[],[],[],[]]; this._gTier={};
-    const base=[...(this.fsets||[]).flatMap(fs=>fs.cards), ...this.uploadCards()];
+    const base=[...(this.fsets||[]).flatMap(fs=>fs.cards), ...this.libCards(), ...this.uploadCards()];
     for(const c of base){
       const hay=(c.name+' '+c.page).toLowerCase();
       if(q && !hay.includes(q)) continue;
@@ -1071,14 +1117,14 @@ class Component extends DCLogic {
     delete q.adds[qid];
     if(wasShared && !q.rms.includes(qid)) q.rms.push(qid);
     return q; }
-  postPick(qid, action, cat){ // live mode best-effort
+  postPick(qid, action, cat, onOk){ // live mode best-effort
     const body={who:this.state.who||'anon', id:qid, action};
     if(cat!==undefined) body.cat=cat;
     fetch(this.BUCKET+'/pick',{method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body)}).catch(()=>{}); }
-  postExt(qid, body){ // best-effort write of extended fields; verifies whether the bucket stores them
+      body:JSON.stringify(body)}).then(r=>{ if(r.ok&&onOk) onOk(); }).catch(()=>{}); }
+  postExt(qid, body, onOk){ // best-effort write of extended fields; verifies whether the bucket stores them
     fetch(this.BUCKET+'/pick',{method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({who:this.state.who||'anon', id:qid, ...body})}).catch(()=>{});
+      body:JSON.stringify({who:this.state.who||'anon', id:qid, ...body})}).then(r=>{ if(r.ok&&onOk) onOk(); }).catch(()=>{});
     if(this.state.ext!=='yes'&&this.state.ext!=='no'){ clearTimeout(this._extT);
       this._extT=setTimeout(async()=>{ try{
         const r=await fetch(this.BUCKET+'/picks',{signal:AbortSignal.timeout(5000)});
@@ -1105,19 +1151,21 @@ class Component extends DCLogic {
     if(e && e.status==='ready'){ this.toast('Already on Ready — manage it there'); return; }
     if(e){ // unpick
       delete p[qid];
-      if(S.sync==='live'){ this.postPick(qid,'remove'); this.setPicks(p,'Removed from Review — shared with the team'); }
-      else if(e.shared||S.queue.adds[qid]!==undefined){ const q=this.queueRm(qid,!!e.shared);
+      if(S.sync==='live' && !c.localOnly){ this.postPick(qid,'remove'); this.setPicks(p,'Removed from Review — shared with the team'); }
+      else if(!c.custom && (e.shared||S.queue.adds[qid]!==undefined)){ const q=this.queueRm(qid,!!e.shared);
         this.setPicks(p,'Removed from Review'+(e.shared?' — submit picks to share the removal':''),{queue:q}); }
       else this.setPicks(p,'Removed from Review — the source stays in the Library');
       return; }
     const dest=this.effDest(S.gather||this.autoDest(c));
     p[qid]={by:S.who||'', dest, status:'cand', ab:'', at:0, note:'', name:'', exc:false, t:Date.now(), mod:true};
     const lbl=this.needLabel(dest);
-    if(S.sync==='live'){ this.postPick(qid,'add',dest);
-      this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+' — live for the whole team'); }
+    if(c.localOnly) this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+' — uploads stay in this browser');
+    else if(S.sync==='live'){ const sharedDest=this.isSharedNeed(dest)?dest:'';
+      this.postPick(qid,'add',sharedDest,()=>this.markSynced(qid,{dest:sharedDest,status:'cand'}));
+      this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+(dest&&!sharedDest?' — pick shared live; the need stays in this browser':' — live for the whole team')); }
     else if(!c.custom){ const q=this.queueAdd(qid,dest);
       this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+' — submit to share with the team',{queue:q}); }
-    else this.setPicks(p, lbl?('Picked → '+lbl):'Picked — choose its need when you publish');
+    else this.setPicks(p, (lbl?('Picked → '+lbl):'Picked')+' — the team bucket is unreachable, so this pick stays in this browser');
   }
   openPub(qid, edit){
     const e=this.state.picks[qid]; if(!e) return;
@@ -1126,27 +1174,39 @@ class Component extends DCLogic {
     const t=(e.name||(c?this.dispName(c,null):'')).trim();
     this.openDlg({kind:'pub', qid, dest, edit:!!edit, titleLen:t.length});
   }
-  pubSubmit = (ev) => { ev.preventDefault();
-    const S=this.state; const dlg=S.dlg; if(!dlg||dlg.kind!=='pub') return;
-    const dest=this.effDest(dlg.dest);
+  pubSubmit = async (ev) => { ev.preventDefault();
+    const dlg=this.state.dlg; if(!dlg||dlg.kind!=='pub') return;
+    let dest=this.effDest(dlg.dest);
     const title=(this.pubTitleEl&&this.pubTitleEl.value.trim())||'';
     if(!dest||!title) return;
     const note=(this.pubNoteEl&&this.pubNoteEl.value.trim())||'';
-    const c=this.card(dlg.qid); const n=this.need(dest);
+    const c=this.card(dlg.qid);
+    if(this.state.sync==='live' && !c.localOnly && !this.isSharedNeed(dest)){
+      const nid=await this.promoteNeed(dest); if(nid) dest=nid; }
+    const S=this.state; const n=this.need(dest);
     const f=this.fit(c,n);
     const p={...S.picks}; const e=p[dlg.qid]; if(!e){ this.setState({dlg:null}); return; }
     const destChanged=e.dest!==dest;
     p[dlg.qid]={...e, dest, name:title, note, status:'ready', exc:!f.ok&&!f.free, mod:true,
       ab:dlg.edit?e.ab:(S.who||''), at:dlg.edit?e.at:Date.now()};
     let extra={dlg:null, lb:null};
-    if(S.sync==='live'){ this.postExt(dlg.qid,{action:'recat',cat:dest,title,note,status:'ready'}); }
+    let tail='';
+    if(c.localOnly) tail=' — uploads stay in this browser';
+    else if(S.sync==='live'){
+      if(this.isSharedNeed(dest)) this.postExt(dlg.qid,{action:'recat',cat:dest,title,note,status:'ready'},
+        ()=>this.markSynced(dlg.qid,{dest,name:title,note,status:'ready'}));
+      else tail=' — the need is local, so this stays in this browser'; }
     else if(destChanged && !c.custom) extra.queue=this.queueAdd(dlg.qid,dest);
     this.setState(extra); this.restoreFocus();
-    this.setPicks(p, dlg.edit?'Saved':('✓ Published into '+n.label+((!f.ok&&!f.free)?' — badged OFF-SPEC':'')), extra.queue?{queue:extra.queue}:null);
+    this.setPicks(p, dlg.edit?'Saved':('✓ Published into '+n.label+((!f.ok&&!f.free)?' — badged OFF-SPEC':'')+tail), extra.queue?{queue:extra.queue}:null);
   };
   sendBack(qid){ const p={...this.state.picks}; if(!p[qid]) return;
     p[qid]={...p[qid], status:'cand', ab:'', at:0, exc:false, mod:true};
-    if(this.state.sync==='live') this.postExt(qid,{action:'recat',cat:p[qid].dest||'',status:'cand',title:p[qid].name||'',note:p[qid].note||''});
+    const c=this.card(qid); const dest=this.effDest(p[qid].dest);
+    if(this.state.sync==='live'&&c&&!c.localOnly&&(!dest||this.isSharedNeed(dest))){
+      const name=p[qid].name||'', note=p[qid].note||'';
+      this.postExt(qid,{action:'recat',cat:dest,status:'cand',title:name,note},
+        ()=>this.markSynced(qid,{dest,name,note,status:'cand'})); }
     this.setState({lb:null});
     this.setPicks(p,'Sent back to Review — no longer on Ready'); }
   removeCand(qid){ this.pick(qid); this.setState({lb:null}); }
@@ -1155,9 +1215,10 @@ class Component extends DCLogic {
     this.openDlg({kind:'confirm', title:'Remove from Ready?',
       body:'It leaves “'+this.needLabel(e.dest)+'” and will not return to Review. The source asset stays in the Library.',
       label:'Remove from Ready', go:()=>{ const S=this.state; const p={...S.picks}; const was=p[qid]; delete p[qid];
+        const c=this.card(qid);
         let extra={};
-        if(S.sync==='live') this.postPick(qid,'remove');
-        else if(was&&(was.shared||S.queue.adds[qid]!==undefined)) extra.queue=this.queueRm(qid,!!was.shared);
+        if(S.sync==='live'&&c&&!c.localOnly) this.postPick(qid,'remove');
+        else if(c&&!c.custom&&was&&(was.shared||S.queue.adds[qid]!==undefined)) extra.queue=this.queueRm(qid,!!was.shared);
         this.setState({lb:null});
         this.setPicks(p,'Removed from Ready',extra); }});
   }
@@ -1174,19 +1235,44 @@ class Component extends DCLogic {
     if(fmts.some(x=>x[0]===f[0]&&x[1]===f[1])){ this.toast('Already listed'); return; }
     this.needCustomEl.value='';
     this.setState({dlg:{...dlg, formats:[...fmts,f]}}); };
-  saveNeed = (e) => { e.preventDefault();
+  saveNeed = async (e) => { e.preventDefault();
     const dlg=this.state.dlg; if(!dlg) return;
     const name=(this.needNameEl&&this.needNameEl.value.trim())||'';
     if(!name){ this.toast('Give the need a name'); return; }
     const spec=(this.needSpecEl&&this.needSpecEl.value.trim())||'';
     const note=(this.needNoteEl&&this.needNoteEl.value.trim())||'';
     const formats=(dlg.formats&&dlg.formats.length)?dlg.formats:null;
-    let needs;
-    if(dlg.id){ needs=this.state.needs.map(n=>n.id===dlg.id?{...n,label:name,spec,note,formats}:n);
-      this.setState({needs,dlg:null},()=>this.save()); this.restoreFocus(); this.toast('Need updated'); }
-    else { const id='n'+Date.now().toString(36);
-      needs=[...this.state.needs,{id,label:name,sharedCat:false,spec,note,formats,pages:[],kw:name.toLowerCase().split(/\s+/).filter(w=>w.length>3)}];
-      this.setState({needs,dlg:null,needSel:id},()=>this.save()); this.restoreFocus(); this.toast('Need created — gather candidates for it'); } };
+    if(dlg.id){ const prev=this.need(dlg.id);
+      const needs=this.state.needs.map(n=>n.id===dlg.id?{...n,label:name,spec,note,formats}:n);
+      this._needs=needs;
+      let msg='Need updated';
+      if(prev&&prev.sharedCat&&prev.label!==name){
+        if(this.state.sync==='live'){
+          fetch(this.BUCKET+'/categories-edit',{method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({action:'rename', id:dlg.id, label:name})}).catch(()=>{});
+          msg='Need updated — new name shared with the team'; }
+        else msg='Need updated — renamed in this browser only'; }
+      this.setState({needs,dlg:null},()=>this.save()); this.restoreFocus(); this.toast(msg); }
+    else {
+      const finish=(id,sharedCat,msg)=>{ const nn={id,label:name,sharedCat,spec,note,formats,pages:[],kw:name.toLowerCase().split(/\s+/).filter(w=>w.length>3)};
+        const nx=[...this.state.needs,nn]; this._needs=nx;
+        this.setState({needs:nx,dlg:null,needSel:id},()=>this.save()); this.restoreFocus(); this.toast(msg); };
+      if(this.state.sync==='live'){
+        let list=null;
+        try{ const r=await fetch(this.BUCKET+'/categories-edit',{method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({action:'add', label:name}), signal:AbortSignal.timeout(5000)});
+          const j=await r.json().catch(()=>({}));
+          if(Array.isArray(j.categories)) list=j.categories;
+        }catch(e){}
+        if(!list){ try{ const g=await fetch(this.BUCKET+'/categories',{signal:AbortSignal.timeout(5000)});
+          if(g.ok){ const gj=await g.json().catch(()=>({})); if(Array.isArray(gj.categories)) list=gj.categories; } }catch(e){} }
+        const hit=(list||[]).find(([,l])=>String(l).toLowerCase()===name.toLowerCase());
+        if(hit&&this.needExists(hit[0])){ this.setState({dlg:null,needSel:hit[0]}); this.restoreFocus();
+          this.toast('A shared need with that name already exists'); return; }
+        if(hit) finish(hit[0],true,'Need created — shared with the team');
+        else finish('n'+Date.now().toString(36),false,'Need created here — sharing it didn’t go through, so it stays in this browser');
+      } else finish('n'+Date.now().toString(36),false,'Need created — gather candidates for it'); } };
   deleteNeed = () => { const dlg=this.state.dlg; if(!dlg||!dlg.id) return;
     const id=dlg.id; const n=this.need(id);
     if(n&&n.sharedCat){ this.toast('Shared team needs can\u2019t be deleted here'); return; }
@@ -1197,6 +1283,7 @@ class Component extends DCLogic {
       label:'Delete need', go:()=>{ const p={...this.state.picks};
         for(const qid of Object.keys(p)) if(p[qid].dest===id) p[qid]={...p[qid],dest:'',status:'cand',ab:'',at:0,exc:false,mod:true};
         const needs=this.state.needs.filter(n=>n.id!==id);
+        this._needs=needs;
         this.setState({needs, needSel:''},()=>this.setPicks(p,'Need deleted — its assets are back in Review'));
       }}); };
 
@@ -1229,8 +1316,10 @@ class Component extends DCLogic {
   lbDupe(d){ const lb=this.state.lb; if(!lb) return; const c=this.card(lb.ids[lb.idx]); if(!c) return;
     const n=Math.max(1,c.members.length); this.setState({lb:{...lb,mi:(lb.mi+d+n)%n}}); }
 
-  startGather(id){ this.setState({view:'lib', gather:id, gDepth:0, fi:0, page:'', q:'', shape:'', shown:160, menu:false});
-    this.toast('Gathering for '+this.needLabel(id)+' — starting from a shortlist'); }
+  startGather(id){ const go=gid=>{ this.setState({view:'lib', gather:gid, gDepth:0, fi:0, page:'', q:'', shape:'', shown:160, menu:false});
+      this.toast('Gathering for '+this.needLabel(gid)+' — starting from a shortlist'); };
+    if(this.state.sync==='live'&&this.need(id)&&!this.isSharedNeed(id)) this.promoteNeed(id).then(nid=>go(nid||id));
+    else go(id); }
   stopGather = () => this.setState({gather:'', gDepth:0, q:'', shown:160});
 
   linksFor(entries){ const lines=[];
@@ -1242,40 +1331,131 @@ class Component extends DCLogic {
     else this.fbCopy(txt,done); }
   fbCopy(txt,done){ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta);
     ta.select(); try{ document.execCommand('copy'); done(); }catch(e){ this.toast('Copy failed'); } ta.remove(); }
-  dlAsset(qid){ const c=this.card(qid); if(c) window.open(c.url,'_blank'); }
+  /* Best-quality download: shared uploads come back as their original bytes;
+     Figma-backed assets use the Worker's /export probe (4x down, cached
+     scale) and fall back to the gallery render only when it fails. */
+  dlAsset = async (qid) => { const c=this.card(qid); if(!c) return;
+    const fname=(this.dispName(c,this.state.picks[qid])||'asset').replace(/[^\w\- .]/g,'').trim().slice(0,60)||'asset';
+    const saveBlob=(blob,ext)=>{ const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob); a.download=fname+'.'+ext; a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),4000); };
+    if(c.localOnly){ const a=document.createElement('a'); a.href=c.url; a.download=fname+'.jpg'; a.click(); return; }
+    if(c.lib){ this.toast('Preparing download…');
+      try{ const r=await fetch(this.BUCKET+'/upload/'+c.upId);
+        if(r.ok){ const b=await r.blob();
+          saveBlob(b, (b.type.split('/')[1]||'png').replace('jpeg','jpg'));
+          this.toast('Original upload downloaded'); return; } }catch(e){}
+      window.open(c.url,'_blank'); return; }
+    this.toast('Preparing best-quality export…');
+    try{ const at=String(qid).indexOf('~');
+      const key=String(qid).slice(0,at), nid=String(qid).slice(at+1);
+      const r=await fetch(this.BUCKET+'/export?key='+encodeURIComponent(key)+'&node='+encodeURIComponent(nid));
+      if(r.ok){ const scale=r.headers.get('X-Figma-Export-Scale')||'';
+        saveBlob(await r.blob(),'png');
+        this.toast('Live Figma export downloaded'+(scale?(' at '+scale+'×'):'')); return; }
+      if(r.status===429){ window.open(c.url,'_blank');
+        this.toast('Export rate limit — opened the gallery render instead; try again in a few minutes'); return; }
+    }catch(e){}
+    window.open(c.url,'_blank');
+    this.toast('Live export unavailable — opened the gallery render');
+  };
+  /* Removing a shared upload deletes it for the whole team (blob, index and
+     any picks of it) — confirmed, live only. */
+  libRemove(qid){ const c=this.card(qid); if(!c||!c.lib) return;
+    this.openDlg({kind:'confirm', title:'Remove from the team library?',
+      body:'“'+this.dispName(c,null)+'” disappears for everyone, along with any picks of it.',
+      label:'Remove for everyone', go:async()=>{ try{
+          const r=await fetch(this.BUCKET+'/library-remove',{method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({id:c.upId})});
+          if(!r.ok) throw new Error('http');
+          const lib={...(this._libIndex||{})}; delete lib[c.upId]; this._libIndex=lib;
+          const p={...this.state.picks}; delete p[qid];
+          this.refreshIndex();
+          this.setState({lb:null});
+          this.setPicks(p,'Removed from the team library');
+        }catch(e){ this.toast('Couldn’t reach the team bucket — nothing was removed'); } }}); }
 
+  UPLOAD_TYPES = {'image/png':1,'image/jpeg':1,'image/webp':1,'image/gif':1};
+  UPLOAD_MAX = 10*1024*1024;
+  readFile(f){ return new Promise(res=>{ const fr=new FileReader();
+    fr.onload=()=>res(String(fr.result||'')); fr.onerror=()=>res(''); fr.readAsDataURL(f); }); }
   onFiles = (ev) => {
     const files=[...(ev.target.files||[])].filter(f=>f.type.startsWith('image/'));
     if(ev.target.value!==undefined) ev.target.value='';
     if(!files.length) return;
-    const jobs=files.map((f,i)=>new Promise(res=>{
-      const url=URL.createObjectURL(f); const im=new Image();
-      im.onload=()=>{ const s=Math.min(1, 512/Math.max(im.naturalWidth,im.naturalHeight));
-        const cv=document.createElement('canvas');
-        cv.width=Math.max(1,Math.round(im.naturalWidth*s)); cv.height=Math.max(1,Math.round(im.naturalHeight*s));
-        cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
-        URL.revokeObjectURL(url);
-        res({id:'up~'+Date.now()+'~'+i, name:f.name.replace(/\.\w+$/,''),
-          w:im.naturalWidth, h:im.naturalHeight, data:cv.toDataURL('image/jpeg',.82)}); };
-      im.onerror=()=>{ URL.revokeObjectURL(url); res(null); };
-      im.src=url; }));
+    if(this.state.sync==='live') this.uploadShared(files);
+    else this.addLocal(files, ' — kept in this browser (the team bucket is unreachable)');
+  };
+  /* Live lane: original bytes go to the Worker's shared Custom library so the
+     whole team sees them. Files the Worker can't take fall back to local. */
+  uploadShared = async (files) => {
+    const good=files.filter(f=>this.UPLOAD_TYPES[f.type]&&f.size<=this.UPLOAD_MAX);
+    const skipped=files.length-good.length;
+    let ok=0; const failed=[]; let unsupported=false;
+    for(const f of good){
+      const data=await this.readFile(f); if(!data){ failed.push(f); continue; }
+      const d=await new Promise(res=>{ const im=new Image();
+        im.onload=()=>res({w:im.naturalWidth,h:im.naturalHeight});
+        im.onerror=()=>res({}); im.src=data; });
+      try{
+        const r=await fetch(this.BUCKET+'/upload',{method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({who:this.state.who||'anon', name:f.name.replace(/\.\w+$/,''), type:f.type,
+            data, w:d.w, h:d.h})});
+        if(r.ok) ok++;
+        else if(r.status===404||r.status===501){ unsupported=true; failed.push(f); }
+        else failed.push(f);
+      }catch(e){ failed.push(f); }
+    }
+    if(ok){ try{ const lr=await fetch(this.BUCKET+'/library',{signal:AbortSignal.timeout(5000)});
+        if(lr.ok){ this._libIndex=await lr.json(); this.refreshIndex(); } }catch(e){}
+      this.setState({fi:(this.fsets||[]).length+1, page:''}); }
+    if(unsupported){ this.addLocal([...failed], ' — kept in this browser'); }
+    else {
+      const bits=[];
+      if(ok) bits.push(ok+' image'+(ok===1?'':'s')+' added to the shared team library');
+      if(failed.length) bits.push(failed.length+' failed to upload — kept in this browser');
+      if(skipped) bits.push(skipped+' skipped (PNG, JPEG, WebP or GIF up to 10 MB)');
+      if(bits.length) this.toast(bits.join(' · '));
+      if(failed.length) this.addLocal(failed, '');
+    }
+  };
+  /* Local fallback keeps the original bytes when small enough; big files are
+     downscaled generously (1600px q88), never to a 512px thumbnail. */
+  addLocal(files, tailMsg){
+    const jobs=files.map(async (f,i)=>{
+      const data=await this.readFile(f); if(!data) return null;
+      return new Promise(res=>{ const im=new Image();
+        im.onload=()=>{ let out=data;
+          if(f.size>1500000){ const s=Math.min(1, 1600/Math.max(im.naturalWidth,im.naturalHeight));
+            const cv=document.createElement('canvas');
+            cv.width=Math.max(1,Math.round(im.naturalWidth*s)); cv.height=Math.max(1,Math.round(im.naturalHeight*s));
+            cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+            out=cv.toDataURL('image/jpeg',.88); }
+          res({id:'up~'+Date.now()+'~'+i, name:f.name.replace(/\.\w+$/,''),
+            w:im.naturalWidth, h:im.naturalHeight, data:out}); };
+        im.onerror=()=>res(null); im.src=data; });
+    });
     Promise.all(jobs).then(list=>{ const ok=list.filter(Boolean); if(!ok.length) return;
       const uploads=[...this.state.uploads, ...ok];
       this.refreshIndex(uploads);
       this.setState({uploads, fi:(this.fsets||[]).length+1, page:''},()=>this.save());
-      this.toast(ok.length+' image'+(ok.length>1?'s':'')+' added — kept in this browser'+(this.state.sync==='live'?'':' (sharing uploads needs the live connection)')); }); };
+      this.toast(ok.length+' image'+(ok.length>1?'s':'')+' added'+(tailMsg||'')); }); };
   stageDragOver = (e) => { if(this.fs().custom) e.preventDefault(); };
   stageDrop = (e) => { if(!this.fs().custom) return; e.preventDefault();
     this.onFiles({target:{files:e.dataTransfer.files}}); };
 
   onKey(e){
     const t=(e.target.tagName||'').toLowerCase();
-    if(t==='input'||t==='textarea'||t==='select'||e.metaKey||e.ctrlKey) return;
+    const inField=t==='input'||t==='textarea'||t==='select';
+    if(e.metaKey||e.ctrlKey) return;
     const {lb,dlg,help,menu,view}=this.state;
-    if(e.key==='Tab'&&(dlg||help||lb)) this.trapTab(e);
+    // the focus trap and Escape must also work while a form field has focus —
+    // the dialogs are mostly made of form fields
+    if(e.key==='Tab'&&(dlg||help||lb)){ this.trapTab(e); return; }
     if(dlg){ if(e.key==='Escape'){ this.setState({dlg:null}); this.restoreFocus(); } return; }
-    if(menu){ if(e.key==='Escape') this.setState({menu:false}); return; }
     if(help){ if(e.key==='Escape'){ this.setState({help:false}); this.restoreFocus(); } return; }
+    if(inField) return;
+    if(menu){ if(e.key==='Escape') this.setState({menu:false}); return; }
     if(lb){
       if(e.key==='Escape'){ this.setState({lb:null}); this.restoreFocus(); }
       else if(e.key==='ArrowLeft'){ e.preventDefault(); this.lbMove(-1); }
@@ -1288,7 +1468,8 @@ class Component extends DCLogic {
   }
 
   fmtAgo(ts){ if(!ts) return ''; const m=(Date.now()-ts)/60000;
-    if(m<90) return 'just now'; if(m<60*36) return Math.round(m/60)+'h ago';
+    if(m<2) return 'just now'; if(m<90) return Math.round(m)+'m ago';
+    if(m<60*36) return Math.round(m/60)+'h ago';
     if(m<60*24*14) return Math.round(m/1440)+'d ago'; return Math.round(m/10080)+'w ago'; }
   fmtDate(iso){ const t=typeof iso==='number'?iso:Date.parse(iso||''); if(!t) return '';
     return new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
@@ -1383,7 +1564,7 @@ class Component extends DCLogic {
         gather:()=>this.startGather(n.id),
         items:items.map(({qid,p,c,dn})=>{ const f=this.fit(c,n);
           const offspec=p.exc||(!f.ok&&!f.free);
-          const dims=Math.round(c.w)+'×'+Math.round(c.h);
+          const dims=this.dims(c);
           return { key:qid, img:c.url, name:dn,
             aria:'Open '+dn+', '+dims+(offspec?', off-spec':''),
             meta:offspec?dims:(f.free?dims:('fits '+f.label)),
@@ -1410,13 +1591,13 @@ class Component extends DCLogic {
       const assigned=this.effDest(p.dest);
       const n=assigned?this.need(assigned):null;
       const dn=this.dispName(c,p);
-      const dims=Math.round(c.w)+'×'+Math.round(c.h);
-      let fitLine=dims+' · '+this.ratioLabel(c.ar)+(c.members.length>1?' · ×'+c.members.length+' variants':''), fitFg='#9c968a';
-      if(n && n.formats){ const f=this.fit(c,n);
+      const dims=this.dims(c);
+      let fitLine=dims+(c.w?(' · '+this.ratioLabel(c.ar)):'')+(c.members.length>1?' · ×'+c.members.length+' variants':''), fitFg='#9c968a';
+      if(n && n.formats && c.w){ const f=this.fit(c,n);
         if(f.ok){ fitLine='✓ fits '+f.label; fitFg='#82bb79'; }
         else { fitLine='⚠ '+dims+' — off-format, need takes '+this.fmtList(n); fitFg='#d9ab4a'; } }
       return { key:qid, img:c.url, name:dn, hasFig:!c.custom, fig:c.fig, figAria:'Open '+dn+' in Figma — new tab',
-        src:c.srcShort+' · '+c.page+(p.by?(' · picked by '+p.by):''),
+        src:(c.lib?('Team upload · by '+(c.who||'unknown')):(c.srcShort+' · '+c.page))+(p.by?(' · picked by '+p.by):''),
         fitLine, fitFg,
         zoomAria:'Judge '+dn+' full-size',
         open:()=>{ const ids=this._revQids||[]; this.openLb(ids, Math.max(0,ids.indexOf(qid)), 'rev'); },
@@ -1474,7 +1655,8 @@ class Component extends DCLogic {
             subFg=reason&&reason.startsWith('fits')?'#82bb79':'#8f897d'; }
           else if(c.members.length>1) sub=c.page+' · ×'+c.members.length;
           tiles.push({ key:c.qid, img:c.url, name:dn, sub, subFg, hasFig:!c.custom, fig:c.fig, figAria:'Open '+dn+' in Figma — new tab',
-            aria:dn+' — '+c.page+' — '+Math.round(c.w)+'×'+Math.round(c.h)+(isReady?' — on Ready':(isCand?' — in Review':''))+' — press Enter to zoom',
+            ld:(e)=>this.measure(c, e.target),
+            aria:dn+' — '+c.page+' — '+this.dims(c)+(isReady?' — on Ready':(isCand?' — in Review':''))+' — press Enter to zoom',
             w:Math.round(t.w*10)/10, h:Math.round(t.h),
             isReady:!!isReady, isCand:!!isCand,
             tag:isReady?('✓ '+this.needLabel(this.effDest(pk.dest))):(isCand?('→ '+(this.needLabel(this.effDest(pk.dest))||'no need yet')):''),
@@ -1535,26 +1717,30 @@ class Component extends DCLogic {
           if(isReady && pk.at) bits.push('published '+this.fmtAgo(pk.at)+(pk.ab?(' by '+pk.ab):''));
           pickInfo=bits.join(' · '); }
         const meta=c.srcIdx>=0?this.meta[c.srcIdx]:null;
-        const fresh=meta?('captured '+this.fmtDate(meta.captured_at)+(meta.lastModified?(' · Figma modified '+this.fmtDate(meta.lastModified)):'')):'upload — lives in this browser';
+        const fresh=meta?('captured '+this.fmtDate(meta.captured_at)+(meta.lastModified?(' · Figma modified '+this.fmtDate(meta.lastModified)):''))
+          :(c.lib?('team upload'+(c.ts?(' · added '+this.fmtDate(c.ts)):'')):'upload — lives in this browser');
         lbv={ lbCounter:(lb.idx+1)+' / '+lb.ids.length, lbName:dn, lbAria:'Asset detail: '+dn,
           lbDir:narrow?'column':'row', lbPanelW:narrow?'100%':'300px', lbPanelAlign:narrow?'stretch':'center',
           lbStatus: isReady?((offspec?'✓ READY · OFF-SPEC · ':'✓ READY · ')+destLbl):(isCand?(destLbl?('CANDIDATE → '+destLbl):'CANDIDATE — NO NEED YET'):'IN LIBRARY — NOT PICKED'),
           lbStatusBg: isReady?(offspec?'rgba(214,164,60,.16)':'#a8730a'):(isCand?'oklch(0.53 0.2 272)':'rgba(236,231,221,.1)'),
           lbStatusFg: isReady?(offspec?'#d9ab4a':'#fff'):(isCand?'#fff':'#c9c3b8'),
           lbHasFit:hasFit, lbFitLine:fitLine, lbFitFg:fitFg,
-          lbDims:Math.round(c.w)+'×'+Math.round(c.h)+' px · '+this.ratioLabel(c.ar),
-          lbSrc:c.srcShort+' · '+c.page,
+          lbDims:c.w?(Math.round(c.w)+'×'+Math.round(c.h)+' px · '+this.ratioLabel(c.ar)):'size unknown',
+          lbSrc:c.lib?('Team upload · by '+(c.who||'unknown')):(c.srcShort+' · '+c.page),
           lbVariants:c.members.length>1?(c.members.length+' near-duplicates'):'unique',
           lbFresh:fresh,
           lbHasPickInfo:!!pickInfo, lbPickInfo:pickInfo,
           lbHasNote:!!(pk&&pk.note), lbNote:pk?pk.note:'',
           lbImgEl:React.createElement('img',{src:mem[mi].url, alt:mem[mi].name||dn, onClick:this.stopEv,
+            onLoad:(e)=>this.measure(c, e.target),
             style:{maxWidth:'calc(100% - 110px)', maxHeight:'100%', objectFit:'contain', borderRadius:6, background:'#efece5', minHeight:0}}),
           lbPrimFig:isReady&&!c.custom, lbPrimDl:isReady&&c.custom,
           lbPrimPublish:!!isCand,
           lbPrimPick:!pk,
           lbSecFig:!c.custom&&isCand, lbHasFig:!c.custom, lbFigHref:c.fig||'#',
           lbCanDropCand:!!isCand,
+          lbCanLibRm:!!c.lib&&S.sync==='live',
+          lbLibRm:(e)=>{e.stopPropagation(); this.libRemove(qid);},
           lbCanMng:!!isReady, lbMngOpen:!!isReady&&S.mng,
           lbMngLabel:S.mng?'Maintain this asset ▴':'Maintain this asset ▾',
           lbMngAria:S.mng?'true':'false',
@@ -1584,9 +1770,9 @@ class Component extends DCLogic {
     if(dlg.kind==='pub'){ const c=this.card(dlg.qid); const pk=S.picks[dlg.qid];
       if(c){ const n=this.need(this.effDest(dlg.dest));
         const f=n?this.fit(c,n):null;
-        const dims=Math.round(c.w)+'×'+Math.round(c.h);
+        const dims=this.dims(c);
         let fitLine='', fitFg='#9c968a', hasFit=false;
-        if(n&&f){ hasFit=true;
+        if(n&&f&&c.w){ hasFit=true;
           if(f.free){ fitLine=dims+' — this need has no fixed format'; }
           else if(f.ok){ fitLine='✓ fits '+f.label; fitFg='#82bb79'; }
           else { fitLine='⚠ '+dims+' — need takes '+this.fmtList(n)+' · will carry an OFF-SPEC badge'; fitFg='#d9ab4a'; } }
@@ -1595,8 +1781,8 @@ class Component extends DCLogic {
         const hasTitle=(dlg.titleLen||0)>0;
         const canGo=!!n&&hasTitle;
         pubv={ pubTitleH:dlg.edit?'Edit details':'Publish to Ready',
-          pubImgBg:'url("'+c.url+'")', pubDims:dims+' px · '+this.ratioLabel(c.ar),
-          pubSrc:c.srcShort+' · '+c.page,
+          pubImgBg:'url("'+c.url+'")', pubDims:c.w?(dims+' px · '+this.ratioLabel(c.ar)):'size unknown',
+          pubSrc:c.lib?('Team upload · by '+(c.who||'unknown')):(c.srcShort+' · '+c.page),
           pubDest:this.effDest(dlg.dest),
           pubDestCh:(e)=>this.setState({dlg:{...dlg, dest:e.target.value}}),
           pubTitleIn:(e)=>{ const len=e.target.value.trim().length;
@@ -1611,11 +1797,16 @@ class Component extends DCLogic {
           pubSemLine:sem?('“'+c.page+'” hasn\u2019t produced '+n.label+' assets before — double-check it belongs here.'):'',
           pubTitleVal:(pk&&pk.name)||this.dispName(c,null),
           pubNoteVal:(pk&&pk.note)||'',
-          pubShareNote:S.sync==='live'
-            ?(S.ext==='yes'?'Shared live for the whole team — need, title, usage note and ready-status included.'
-              :'The pick and its need are shared live. The title, usage note and ready-status stay in this browser.')
+          pubShareNote:c.localOnly
+            ?'This is a browser upload — it stays in this browser and isn’t shared with the team.'
+            :(c.custom&&S.sync!=='live')
+            ?'The team bucket is unreachable — changes to this shared upload stay in this browser until it returns.'
+            :(S.sync==='live'
+            ?((n&&!n.sharedCat)?'This need isn’t shared yet — publishing shares the need with the team first.'
+              :(S.ext==='yes'?'Shared live for the whole team — need, title, usage note and ready-status included.'
+              :'The pick and its need are shared live. The title, usage note and ready-status stay in this browser.'))
             :(S.sync==='queue'?'The pick and its need share via “Submit to team”. The title, usage note and ready-status stay in this browser.'
-            :'Offline — everything here stays in this browser until a connection returns.'),
+            :'Offline — everything here stays in this browser until a connection returns.')),
           pubBlockedMsg:!canGo, pubBlocked:!n?'Choose a need to publish':'Add a title to publish',
           pubDisabled:!canGo, pubCursor:canGo?'pointer':'not-allowed',
           pubBtnLabel:dlg.edit?'Save changes':(off?'Publish as OFF-SPEC':'Publish to Ready'),
@@ -1638,8 +1829,8 @@ class Component extends DCLogic {
     const freshTxt=this.meta?this.FILES.map((f,i)=>f.short+' '+this.fmtDate(this.meta[i].captured_at)).join(' · '):'';
     const helpShareTxt=S.sync==='live'
       ?(S.ext==='yes'
-        ?'Picks, needs, titles, usage notes and ready-status are shared live through the team bucket (this browser refreshes every 30 seconds). Uploads are kept locally.'
-        :'Picks and their needs are shared live through the team bucket (this browser refreshes every 30 seconds). Titles, usage notes and ready-status live in this browser only. Uploads are kept locally.')
+        ?'Picks, needs, titles, usage notes and ready-status are shared live through the team bucket (this browser refreshes every 30 seconds). Uploads go to the shared team library.'
+        :'Picks and their needs are shared live through the team bucket (this browser refreshes every 30 seconds). Titles, usage notes and ready-status live in this browser only. Uploads go to the shared team library.')
       :(S.sync==='queue'
       ?'You see the team\u2019s last shared picks'+(S.snapTs?(' (as of '+this.fmtDate(S.snapTs)+')'):'')+'. The live bucket is unreachable, so new picks queue here — “Submit to team” opens a pre-filled GitHub issue that merges them into the shared bucket for everyone. Queued changes stay listed until they actually appear there. Titles, usage notes, ready-status and uploads stay in this browser only.'
       :'No shared connection right now — everything stays in this browser until the bucket or the shared snapshot is reachable again.');
@@ -1679,9 +1870,12 @@ class Component extends DCLogic {
       readyNoMatch:ok&&!!rq&&!anyShown, readySections,
       // review
       revSub:candE.length+' candidate'+(candE.length===1?'':'s')+(unassN?(' · '+unassN+' without a need'):''),
-      staleShow:ok&&S.staleN>0&&!S.staleHide,
+      staleShow:ok&&(S.staleN>0||S.staleUp>0)&&!S.staleHide,
       staleReload:()=>this.loadCatalog(), staleDismiss:()=>this.setState({staleHide:true}),
-      staleTxt:S.staleN+' shared pick'+(S.staleN===1?'':'s')+' point'+(S.staleN===1?'s':'')+' at assets missing from the current library capture. They stay safe in the shared bucket — reload the sources to check for a fresher capture.',
+      staleTxt:[
+        S.staleUp?(S.staleUp+' shared pick'+(S.staleUp===1?'':'s')+' point'+(S.staleUp===1?'s':'')+' at team uploads that are no longer in the shared library.'):'',
+        S.staleN?(S.staleN+' shared pick'+(S.staleN===1?'':'s')+' point'+(S.staleN===1?'s':'')+' at assets missing from the current library capture. They stay safe in the shared bucket — reload the sources to check for a fresher capture.'):''
+      ].filter(Boolean).join(' '),
       revEmpty:ok&&!candE.length, revGroups,
       // library
       showRail:!narrow&&!gatherNeed, hasPages:!!(fs&&!fs.all&&!fs.custom), noPages:!!(fs&&(fs.all||fs.custom)),
@@ -1709,8 +1903,8 @@ class Component extends DCLogic {
       gMoreGo:()=>{ if(gMoreDef) this.setState({gDepth:gMoreDef.go, shown:320}); },
       uploadsEmpty,
       uploadsEmptyHint:S.sync==='live'
-        ?'Drop images anywhere here, or use Add images.'
-        :'Drop images anywhere here, or use Add images. Uploads are kept in this browser — sharing them needs the live team connection.',
+        ?'Drop images anywhere here, or use Add images. Uploads go to the shared team library — everyone sees them.'
+        :'Drop images anywhere here, or use Add images. The team bucket is unreachable, so uploads stay in this browser.',
       noResults:ok&&S.view==='lib'&&!uploadsEmpty&&(this._libTotal||0)===0,
       noResultsHint:gatherNeed?'No matches — clear the search or show more of the library below.':'Nothing matches — clear the search or shape filter.',
       libSections,
@@ -1728,7 +1922,7 @@ class Component extends DCLogic {
       needDlgSub:editNeed&&editNeed.sharedCat?'A shared team need — format, note and guidance edits apply in this browser.':'Name a concrete production use and set the formats teammates should trust.',
       needDlgName:editNeed?editNeed.label:'', needDlgSpec:editNeed?(editNeed.spec||''):'',
       needDlgNote:editNeed?(editNeed.note||''):'',
-      needShareNote:S.sync==='live'?'The shared need list lives in the team bucket; these details refine it locally.':'Need details are kept in this browser — the shared need list comes from the team bucket.',
+      needShareNote:S.sync==='live'?'New needs and name changes share with the whole team; formats, notes and guidance refine this browser’s view.':'Offline — a need created now stays in this browser until it’s used while connected.',
       needSaveLabel:editNeed?'Save changes':'Create need',
       needCanDelete:!!(editNeed&&!editNeed.sharedCat), needDelete:this.deleteNeed, needSave:this.saveNeed,
       needNameRef:this.needNameRef, needSpecRef:this.needSpecRef, needNoteRef:this.needNoteRef,
