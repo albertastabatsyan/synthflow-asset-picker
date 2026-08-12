@@ -459,7 +459,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
               <button onClick="{{lbRestore}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#e8e8ea;text-align:center;min-height:{{ctlH}}px">↩ Restore to the queue</button>
             </sc-if>
             <sc-if value="{{lbCanRej}}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{lbReject}}" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:center;min-height:{{ctlH}}px">✕ Reject — leaves the queue</button>
+              <button onClick="{{lbReject}}" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:center;min-height:{{ctlH}}px">{{lbRejLabel}}</button>
             </sc-if>
             <sc-if value="{{lbCanDropCand}}" hint-placeholder-val="{{ false }}">
               <button onClick="{{lbDropCand}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:left;min-height:{{ctlH}}px">Remove from Review</button>
@@ -859,7 +859,7 @@ class Component extends DCLogic {
       let ext=this.state.ext;
       for(const id of Object.keys(shared)){ const s=shared[id];
         if(ext!=='yes'&&(s.title!==undefined||s.status!==undefined)) ext='yes';
-        if(!this._byQid.get(id) || picks[id]) continue;
+        if(!this._byQid.get(id) || picks[id] || this.wasCleared(id)) continue;
         const names=Object.keys(s.pickers||{});
         const legacyReady=!!s.fin&&s.status===undefined;
         picks[id]={by:names.join(', '), dest:this.needExists(s.cat)?s.cat:'', status:legacyReady?'ready':'cand',
@@ -910,20 +910,29 @@ class Component extends DCLogic {
   reject(qid){
     const c=this.card(qid); if(!c) return;
     const S=this.state;
-    if(S.picks[qid] || S.rejects[qid]) return;
+    if(S.rejects[qid]) return;
+    const pk=S.picks[qid];
+    if(pk && pk.status==='ready'){ this.toast('Already on Ready — manage it there'); return; }
     if(S.sync==='live' && !S.who && !this._whoAsked && !c.localOnly){
       this._whoAsked=true; this._pendingRej=qid;
       this.openDlg({kind:'who', then:'reject'}); return; }
     const rejects={...S.rejects}; const rejQ={...S.rejQ};
     rejects[qid]={by:S.who||'', t:Date.now()};
-    let msg='Rejected — out of the queue';
+    let picks=S.picks, queue=null;
+    if(pk){ picks={...S.picks}; delete picks[qid]; this.markCleared(qid); }
+    let msg=pk?'Rejected — removed from Review, out of the queue':'Rejected — out of the queue';
     if(c.localOnly) msg='Rejected — uploads stay in this browser';
-    else if(S.sync==='live' && this._rejCap){ this.postReject(qid,'reject');
-      msg='Rejected — it leaves the whole team’s queue'; }
+    else if(S.sync==='live' && this._rejCap){
+      // the Worker refuses to reject a picked id — drop the whole pick first,
+      // and send the rejection only once the clear is confirmed
+      if(pk) this.postPick(qid,'clear',undefined,()=>this.postReject(qid,'reject'));
+      else this.postReject(qid,'reject');
+      msg=pk?'Rejected — removed from Review for the whole team':'Rejected — it leaves the whole team’s queue'; }
     else { rejQ[qid]='reject';
+      if(pk && !c.custom && (pk.shared||S.queue.adds[qid]!==undefined)) queue=this.queueRm(qid,!!pk.shared);
       msg=S.sync==='live'?'Rejected — shared once the team bucket supports rejections'
         :'Rejected — the team bucket is unreachable, so this stays in this browser for now'; }
-    this.setState({rejects, rejQ},()=>this.save());
+    this.setState({picks, rejects, rejQ, ...(queue?{queue}:{})},()=>this.save());
     this.toast(msg, {label:'Undo', go:()=>this.unreject(qid)});
   }
   unreject(qid){
@@ -1266,6 +1275,11 @@ class Component extends DCLogic {
     delete q.adds[qid];
     if(wasShared && !q.rms.includes(qid)) q.rms.push(qid);
     return q; }
+  /* A full local un-pick must survive the 30s poll: the in-flight or next
+     /picks response still carries the entry until the Worker applies the
+     clear, and re-adding it would look like the pick coming back on its own. */
+  markCleared(qid){ (this._cleared||(this._cleared={}))[qid]=Date.now(); }
+  wasCleared(qid){ const t=this._cleared&&this._cleared[qid]; return !!t && Date.now()-t<60000; }
   postPick(qid, action, cat, onOk){ // live mode best-effort
     const body={who:this.state.who||'anon', id:qid, action};
     if(cat!==undefined) body.cat=cat;
@@ -1298,9 +1312,11 @@ class Component extends DCLogic {
     const c=this.card(qid); if(!c) return;
     const S=this.state; const p={...S.picks}; const e=p[qid];
     if(e && e.status==='ready'){ this.toast('Already on Ready — manage it there'); return; }
-    if(e){ // unpick
-      delete p[qid];
-      if(S.sync==='live' && !c.localOnly){ this.postPick(qid,'remove'); this.setPicks(p,'Removed from Review — shared with the team'); }
+    if(e){ // unpick — 'clear' drops the whole shared entry; 'remove' only strips
+      // this browser's name, and any other picker name left behind would make
+      // the poll resurrect the pick here
+      delete p[qid]; this.markCleared(qid);
+      if(S.sync==='live' && !c.localOnly){ this.postPick(qid,'clear'); this.setPicks(p,'Removed from Review — shared with the team'); }
       else if(!c.custom && (e.shared||S.queue.adds[qid]!==undefined)){ const q=this.queueRm(qid,!!e.shared);
         this.setPicks(p,'Removed from Review'+(e.shared?' — submit picks to share the removal':''),{queue:q}); }
       else this.setPicks(p,'Removed from Review — the source stays in the Library');
@@ -1315,6 +1331,7 @@ class Component extends DCLogic {
       delete rejects[qid]; delete rejQ[qid];
       this.setState({rejects, rejQ}); }
     const dest=this.effDest(S.gather||this.autoDest(c));
+    if(this._cleared) delete this._cleared[qid];
     p[qid]={by:S.who||'', dest, status:'cand', ab:'', at:0, note:'', name:'', exc:false, t:Date.now(), mod:true};
     const lbl=this.needLabel(dest);
     const act={label:'Publish now', go:()=>this.openPub(qid)};
@@ -1389,9 +1406,10 @@ class Component extends DCLogic {
     this.openDlg({kind:'confirm', title:'Remove from Ready?',
       body:'It leaves “'+this.needLabel(e.dest)+'” and will not return to Review. The source asset stays in the Library.',
       label:'Remove from Ready', go:()=>{ const S=this.state; const p={...S.picks}; const was=p[qid]; delete p[qid];
+        this.markCleared(qid);
         const c=this.card(qid);
         let extra={};
-        if(S.sync==='live'&&c&&!c.localOnly) this.postPick(qid,'remove');
+        if(S.sync==='live'&&c&&!c.localOnly) this.postPick(qid,'clear');
         else if(c&&!c.custom&&was&&(was.shared||S.queue.adds[qid]!==undefined)) extra.queue=this.queueRm(qid,!!was.shared);
         this.setState({lb:null});
         this.setPicks(p,'Removed from Ready',extra); }});
@@ -1640,6 +1658,8 @@ class Component extends DCLogic {
       else if(e.key==='ArrowUp'){ e.preventDefault(); this.lbDupe(-1); }
       else if(e.key==='ArrowDown'){ e.preventDefault(); this.lbDupe(1); }
       else if(e.key==='p'||e.key==='P'){ e.preventDefault(); this.pick(lb.ids[lb.idx]); }
+      else if(e.key==='x'||e.key==='X'){ e.preventDefault(); const qid=lb.ids[lb.idx]; const pk=this.state.picks[qid];
+        if((!pk||pk.status==='cand')&&!this.state.rejects[qid]) this.reject(qid); }
       else if(e.key==='Enter'){ const qid=lb.ids[lb.idx]; const pk=this.state.picks[qid];
         if(pk&&pk.status==='cand'){ e.preventDefault(); this.openPub(qid); } }
       else if(e.key==='f'||e.key==='F'){ const c=this.card(lb.ids[lb.idx]);
@@ -1916,13 +1936,13 @@ class Component extends DCLogic {
           else if(c.members.length>1) sub=c.page+' · ×'+c.members.length;
           tiles.push({ key:c.qid, img:c.url, name:dn, sub, subFg, hasFig:!c.custom, fig:c.fig, figAria:'Open '+dn+' in Figma — new tab',
             ld:(e)=>this.measure(c, e.target),
-            aria:dn+' — '+c.page+' — '+this.dims(c)+(isReady?' — on Ready':(isCand?' — in Review':(isRej?' — rejected':'')))+' — Enter zooms, Space picks'+(!pk&&!isRej?', X rejects':''),
+            aria:dn+' — '+c.page+' — '+this.dims(c)+(isReady?' — on Ready':(isCand?' — in Review':(isRej?' — rejected':'')))+' — Enter zooms, Space picks'+((!pk||isCand)&&!isRej?', X rejects':''),
             w:Math.round(t.w*10)/10, h:Math.round(t.h),
             op:dim?'.45':'1',
             isReady:!!isReady, isCand:!!isCand, isRej,
-            hasRej:!pk&&!isRej,
+            hasRej:(!pk||isCand)&&!isRej,
             rej:(e)=>{ e.stopPropagation(); this.reject(c.qid); },
-            rejAria:'Reject '+dn+' — it leaves the queue',
+            rejAria:'Reject '+dn+(pk?' — removes it from Review':' — it leaves the queue'),
             tag:isReady?('✓ '+this.needLabel(this.effDest(pk.dest))):(isCand?('→ '+(this.needLabel(this.effDest(pk.dest))||'no need yet')):''),
             actLabel, actBg, actFg, actLine, actAria,
             act:(e)=>{ e.stopPropagation();
@@ -1932,7 +1952,7 @@ class Component extends DCLogic {
             open:()=>this.openLbAt(c.qid),
             keyd:(e)=>{ if(e.key==='Enter'){ e.preventDefault(); this.openLbAt(c.qid); }
               else if(e.key===' '){ e.preventDefault(); if(isRej) this.unreject(c.qid); else this.pick(c.qid); }
-              else if(e.key==='x'||e.key==='X'){ e.preventDefault(); if(!pk&&!isRej) this.reject(c.qid); } } });
+              else if(e.key==='x'||e.key==='X'){ e.preventDefault(); if((!pk||isCand)&&!isRej) this.reject(c.qid); } } });
         }
         rows.push({key:'r'+(ri++), tiles});
       }
@@ -2027,7 +2047,8 @@ class Component extends DCLogic {
           lbPrimPick:!pk,
           lbSecFig:!c.custom&&isCand, lbHasFig:!c.custom, lbFigHref:c.fig||'#',
           lbCanDropCand:!!isCand,
-          lbCanRej:!pk&&!isRejLb, lbReject:(e)=>{e.stopPropagation(); this.reject(qid);},
+          lbCanRej:(!pk||!!isCand)&&!isRejLb, lbReject:(e)=>{e.stopPropagation(); this.reject(qid);},
+          lbRejLabel:pk?'✕ Reject — removes it from Review':'✕ Reject — leaves the queue',
           lbCanRestore:!!isRejLb, lbRestore:(e)=>{e.stopPropagation(); this.unreject(qid);},
           lbCanLibRm:!!c.lib&&S.sync==='live',
           lbLibRm:(e)=>{e.stopPropagation(); this.libRemove(qid);},
