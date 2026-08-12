@@ -722,8 +722,20 @@ class Component extends DCLogic {
     clearInterval(this._poll);
   }
 
+  sharedGet = async name => {
+    const headers={}; const prior=(this._sharedEtags||{})[name];
+    if(prior) headers['If-None-Match']=prior;
+    const r=await fetch(this.BUCKET+'/'+name,{cache:'no-store',headers,signal:AbortSignal.timeout(5000)});
+    if(r.status===304) return {ok:true, unchanged:true};
+    if(!r.ok) return {ok:false, unchanged:false};
+    const etag=r.headers.get('etag');
+    if(etag){ this._sharedEtags=this._sharedEtags||{}; this._sharedEtags[name]=etag; }
+    return {ok:true, unchanged:false, value:await r.json()};
+  };
+
   loadCatalog = async () => {
     this.setState({phase:'load'});
+    this._sharedEtags={};
     let saved=null; try{ saved=JSON.parse(localStorage.getItem('sfap_v9')||localStorage.getItem('sfap_v8')||localStorage.getItem('sfap_v7')||'null'); }catch(e){}
     try {
       const r=await fetch('./config.json',{cache:'no-store'});
@@ -749,20 +761,20 @@ class Component extends DCLogic {
     // --- shared layer: live worker, else published bucket + snapshot ---
     let live=false, shared={}, cats=null, sync='off', snapTs=0;
     try {
-      const r=await fetch(this.BUCKET+'/picks',{signal:AbortSignal.timeout(5000)});
-      if(r.ok){ shared=await r.json(); live=true; sync='live'; }
+      const r=await this.sharedGet('picks');
+      if(r.ok&&!r.unchanged){ shared=r.value; live=true; sync='live'; }
     } catch(e){}
     let sharedRej=null;
     if(live){
-      try{ const r=await fetch(this.BUCKET+'/categories',{signal:AbortSignal.timeout(5000)});
-        if(r.ok) cats=(await r.json()).categories; }catch(e){}
+      try{ const r=await this.sharedGet('categories');
+        if(r.ok&&!r.unchanged) cats=r.value.categories; }catch(e){}
       this._libIndex={};
-      try{ const r=await fetch(this.BUCKET+'/library',{signal:AbortSignal.timeout(5000)});
-        if(r.ok) this._libIndex=await r.json(); }catch(e){}
+      try{ const r=await this.sharedGet('library');
+        if(r.ok&&!r.unchanged) this._libIndex=r.value; }catch(e){}
       // rejections are a bucket capability, probed like the extended fields:
       // an older Worker 404s here, and rejects then stay browser-local queued
-      try{ const r=await fetch(this.BUCKET+'/rejects',{signal:AbortSignal.timeout(5000)});
-        if(r.ok) sharedRej=await r.json(); }catch(e){}
+      try{ const r=await this.sharedGet('rejects');
+        if(r.ok&&!r.unchanged) sharedRej=r.value; }catch(e){}
       this._rejCap=sharedRej!==null;
     } else {
       this._libIndex={};   // upload bytes live on the Worker — unreachable now
@@ -846,12 +858,12 @@ class Component extends DCLogic {
   };
 
   refreshShared = async () => {
-    try{ const lr=await fetch(this.BUCKET+'/library',{signal:AbortSignal.timeout(5000)});
-      if(lr.ok){ const lib=await lr.json();
+    try{ const lr=await this.sharedGet('library');
+      if(lr.ok&&!lr.unchanged){ const lib=lr.value;
         if(JSON.stringify(lib)!==JSON.stringify(this._libIndex||{})){
           this._libIndex=lib; this.refreshIndex(); } } }catch(e){}
-    try{ const r=await fetch(this.BUCKET+'/picks',{signal:AbortSignal.timeout(5000)});
-      if(!r.ok) return; const shared=await r.json();
+    try{ const r=await this.sharedGet('picks');
+      if(r.ok&&!r.unchanged){ const shared=r.value;
       const picks={...this.state.picks};
       const qAdds=this.state.queue.adds;
       for(const id of Object.keys(picks)){ const p=picks[id];   // remote removals reach synced entries
@@ -875,19 +887,19 @@ class Component extends DCLogic {
         if(s.status==='cand') upd.status='cand';
         if(s.cat!==undefined&&this.needExists(s.cat)) upd.dest=s.cat;
         picks[id]=upd; } }
-      this.setState({picks, shared, ext});
+      this.setState({picks, shared, ext}); }
     }catch(e){}
     // rejections ride the same poll; the capability re-probes each tick so a
     // Worker deployed mid-session starts syncing without a reload
-    try{ const r=await fetch(this.BUCKET+'/rejects',{signal:AbortSignal.timeout(5000)});
-      if(r.ok){ this._rejCap=true; const rj=await r.json();
+    try{ const r=await this.sharedGet('rejects');
+      if(r.ok){ this._rejCap=true; if(!r.unchanged){ const rj=r.value;
         const rejects={...this.state.rejects}; const Q=this.state.rejQ||{};
         for(const id of Object.keys(rejects)){ const e=rejects[id];   // remote restores reach synced entries
           if(e.shared && !rj[id] && Q[id]===undefined) delete rejects[id]; }
         for(const id of Object.keys(rj)){
           if(!this._byQid.get(id) || rejects[id] || this.state.picks[id] || Q[id]==='unreject') continue;
           rejects[id]={by:rj[id].who||'', t:Date.parse(rj[id].ts||'')||Date.now(), shared:true}; }
-        this.setState({rejects}); } }catch(e){}
+        this.setState({rejects}); } } }catch(e){}
     this.flushRejQ();
   };
 
