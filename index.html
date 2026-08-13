@@ -77,6 +77,7 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
         <button onClick="{{t.go}}" aria-current="{{t.cur}}" class="{{t.hvc}}" style="border:0;background:{{t.bg}};color:{{t.fg}};border-radius:4px;padding:{{navPad}};font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px;white-space:nowrap;min-height:{{navH}}px">{{t.label}}<sc-if value="{{t.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:transparent;border:1px solid oklch(0.45 0.09 262);color:#8ab4ff;border-radius:4px;padding:1px 6px;font-weight:600">{{t.badge}}</span></sc-if></button>
       </sc-for>
     </nav>
+    <button onClick="{{openAssessmentFilter}}" aria-current="{{assessmentFilterCur}}" aria-label="Open asset assessment" data-tip="Find the best assessed assets for what you are making" class="{{assessmentFilterHover}}" style="border:1px solid {{assessmentFilterLine}};background:{{assessmentFilterBg}};color:{{assessmentFilterFg}};border-radius:4px;padding:{{tabPad}};font-size:12.5px;font-weight:700;white-space:nowrap;min-height:{{ctlH}}px">⌕ {{assessmentFilterLabel}}</button>
     <div style="flex:1;min-width:8px"></div>
     <div data-tip="{{syncTitle}}" tabIndex="0" role="note" aria-label="{{syncTitle}}" style="display:flex;align-items:center;gap:7px;border:1px solid rgba(232,232,234,.18);background:rgba(232,232,234,.05);border-radius:4px;padding:5px 12px;min-height:30px">
       <span style="width:8px;height:8px;border-radius:50%;background:{{syncDot}};flex:none"></span>
@@ -264,7 +265,7 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
   <sc-if value="{{showLib}}" hint-placeholder-val="{{ false }}">
   <main data-screen-label="Library" style="flex:1;display:flex;min-height:0">
     <sc-if value="{{showRail}}" hint-placeholder-val="{{ true }}">
-      <nav aria-label="Sources and pages" style="width:248px;flex:none;border-right:1px solid rgba(232,232,234,.1);display:flex;flex-direction:column;min-height:0;background:#17191c">
+      <nav data-lib-rail="1" aria-label="Sources and pages" style="width:268px;flex:none;border-right:1px solid rgba(232,232,234,.1);display:flex;flex-direction:column;min-height:0;background:#17191c">
         <div style="flex:none;padding:12px 10px 8px;display:flex;flex-direction:column;gap:2px">
           <div style="font-size:11px;font-weight:700;letter-spacing:.09em;color:#80848d;padding:0 8px 6px">SOURCES</div>
           <sc-for list="{{libRows}}" as="lr" hint-placeholder-count="4">
@@ -322,15 +323,24 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
         </sc-if>
       </sc-if>
       <sc-if value="{{gatherOn}}" hint-placeholder-val="{{ false }}">
-        <div style="flex:none;padding:10px 16px;background:oklch(0.30 0.05 262);border-bottom:1px solid oklch(0.45 0.09 262);display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px">
-          <div style="min-width:0">
-            <h1 style="font-size:13px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">⌕ Gathering for {{gatherLabel}}</h1>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8b8f96">{{gatherSpec}}</div>
+        <div style="flex:none;padding:10px 16px;background:oklch(0.30 0.05 262);border-bottom:1px solid oklch(0.45 0.09 262);display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;width:100%">
+            <div style="font-size:11px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;color:#aeb9d6;white-space:nowrap">What are you making?</div>
+            {{gatherNeedSelectEl}}
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8b8f96">{{gatherSpec}}</span>
+            <span style="flex:1;min-width:8px"></span>
+            {{gatherSortEl}}
+            <input type="search" ref="{{libSearchRef2}}" value="{{libQ}}" onChange="{{onLibQ}}" placeholder="{{gatherPh}}" aria-label="Search assessment results" style="width:180px;background:#2a2d31;border:1px solid oklch(0.45 0.09 262);border-radius:4px;padding:6px 13px;font-size:12px;outline:none;min-height:{{ctlH}}px">
+            <button onClick="{{toggleGatherFilters}}" aria-expanded="{{gatherFiltersExpanded}}" class="hv-blue" style="border:1px solid oklch(0.45 0.09 262);background:transparent;color:#8ab4ff;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:700;min-height:{{ctlH}}px">Advanced filters <sc-if value="{{gatherHasRules}}" hint-placeholder-val="{{ false }}">({{gatherRuleCount}})</sc-if></button>
+            <button onClick="{{stopGather}}" aria-label="Close assessment" class="hv-blue" style="border:1px solid oklch(0.45 0.09 262);background:transparent;color:#8ab4ff;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:700;min-height:{{ctlH}}px">Close</button>
           </div>
-          <span style="font-size:11.5px;color:#8b8f96">Picks go to Review, assigned to this need.</span>
-          <span style="flex:1;min-width:8px"></span>
-          <input type="search" ref="{{libSearchRef2}}" value="{{libQ}}" onChange="{{onLibQ}}" placeholder="{{gatherPh}}" aria-label="Search gather results" style="width:180px;background:#2a2d31;border:1px solid oklch(0.45 0.09 262);border-radius:4px;padding:6px 13px;font-size:12px;outline:none;min-height:{{ctlH}}px">
-          <button onClick="{{stopGather}}" class="hv-blue" style="border:1px solid oklch(0.45 0.09 262);background:transparent;color:#8ab4ff;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:700;min-height:{{ctlH}}px">Done gathering</button>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px 12px;width:100%">
+            {{gatherQuickViewsEl}}
+            {{gatherReviewToggleEl}}
+            <span style="flex:1;min-width:8px"></span>
+            {{gatherTierEl}}
+          </div>
+          {{gatherActiveFiltersEl}}
         </div>
       </sc-if>
       <div ref="{{gridRef}}" onDragOver="{{stageDragOver}}" onDrop="{{stageDrop}}" style="flex:1;overflow-y:auto;min-height:0;padding:16px;position:relative;outline:none">
@@ -342,7 +352,15 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
           </div>
         </sc-if>
         <sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}">
-          <div style="padding:60px 24px;text-align:center;color:#8b8f96;font-size:13px">{{noResultsHint}}</div>
+          <div style="padding:60px 24px;text-align:center;color:#8b8f96;font-size:13px">
+            <div>{{noResultsHint}}</div>
+            <sc-if value="{{noResultsAssessment}}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:16px">
+                <button onClick="{{clearAssessmentFilters}}" class="hv-bright" style="border:1px solid #e4e7ec;background:#e4e7ec;color:#111214;border-radius:4px;padding:9px 14px;font-size:12px;font-weight:700;min-height:44px">Clear all filters</button>
+                <sc-if value="{{noResultsCanAdapt}}" hint-placeholder-val="{{ false }}"><button onClick="{{showAdaptableAssessment}}" class="hv-blue" style="border:1px solid oklch(0.45 0.09 262);background:transparent;color:#8ab4ff;border-radius:4px;padding:9px 14px;font-size:12px;font-weight:700;min-height:44px">Show worth adapting</button></sc-if>
+              </div>
+            </sc-if>
+          </div>
         </sc-if>
         <sc-for list="{{libSections}}" as="ls" hint-placeholder-count="1">
           <section style="margin-bottom:14px">
@@ -363,6 +381,14 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
                   <div style="flex:none;width:{{it.w}}px;display:flex;flex-direction:column;gap:0;position:relative;opacity:{{it.op}};transition:opacity .15s" style-hover="opacity:1">
                     <div role="button" tabIndex="0" data-tile="1" aria-label="{{it.aria}}" onClick="{{it.open}}" onKeyDown="{{it.keyd}}" style="position:relative;width:100%;height:{{it.h}}px;border-radius:4px 4px 0 0;background:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);border:1px solid rgba(232,232,234,.18);border-bottom:0;overflow:hidden;cursor:zoom-in" style-hover="border-color:rgba(232,232,234,.36)">
                       <img src="{{it.img}}" alt="" loading="lazy" draggable="{{false}}" onError="{{imgErr}}" onLoad="{{it.ld}}" style="width:100%;height:100%;object-fit:cover;display:block">
+                      <sc-if value="{{it.hasAssessment}}" hint-placeholder-val="{{ false }}">
+                        <div style="position:absolute;top:6px;left:6px;z-index:2;display:flex;flex-wrap:wrap;gap:3px;max-width:calc(100% - 82px);pointer-events:none">
+                          <span style="background:rgba(11,12,14,.88);border:1px solid rgba(232,232,234,.28);border-radius:4px;padding:3px 6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;color:#eef0f3;white-space:nowrap">{{it.assessmentMatch}}</span>
+                          <span style="background:rgba(11,12,14,.88);border:1px solid rgba(232,232,234,.28);border-radius:4px;padding:3px 6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;color:#eef0f3;white-space:nowrap">{{it.assessmentQuality}}</span>
+                          <span style="background:{{it.assessmentBg}};border:1px solid {{it.assessmentLine}};border-radius:4px;padding:3px 6px;font-size:9.5px;font-weight:750;color:{{it.assessmentFg}};white-space:nowrap">{{it.assessmentReadiness}}</span>
+                          <sc-if value="{{it.assessmentNeedsReview}}" hint-placeholder-val="{{ false }}"><span style="background:#493a16;border:1px solid #d4a72c;border-radius:4px;padding:3px 6px;font-size:9.5px;font-weight:750;color:#ffe49a;white-space:nowrap">Review</span></sc-if>
+                        </div>
+                      </sc-if>
                       <sc-if value="{{it.isReady}}" hint-placeholder-val="{{ false }}">
                         <div style="position:absolute;inset:0;border:3px solid #b5ff90;pointer-events:none"></div>
                         <div style="position:absolute;bottom:6px;left:6px;background:#b5ff90;color:#1c3a10;font-size:11px;font-weight:600;border-radius:4px;padding:2px 8px;pointer-events:none;max-width:86%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.tag}}</div>
@@ -396,11 +422,6 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
             </sc-for>
           </section>
         </sc-for>
-        <sc-if value="{{gMore}}" hint-placeholder-val="{{ false }}">
-          <div style="padding:6px 0 18px;text-align:center">
-            <button onClick="{{gMoreGo}}" class="hv-bright" style="border:1px solid oklch(0.45 0.09 262);background:oklch(0.26 0.04 262);color:#8ab4ff;border-radius:4px;padding:9px 20px;font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">{{gMoreLabel}}</button>
-          </div>
-        </sc-if>
         <div ref="{{sentinelRef}}" style="height:2px"></div>
         <sc-if value="{{hasMore}}" hint-placeholder-val="{{ false }}">
           <div style="padding:14px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">loading more…</div>
@@ -408,6 +429,14 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
       </div>
     </section>
   </main>
+  <sc-if value="{{gatherFilterDrawer}}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{closeGatherFilters}}" role="dialog" aria-modal="true" aria-label="Advanced assessment filters" style="position:fixed;inset:0;background:rgba(12,13,14,.72);z-index:68;display:flex;justify-content:flex-start">
+      <aside onClick="{{stopEv}}" style="width:min(380px,92vw);height:100%;background:#17191c;border-right:1px solid #3a3e44;display:flex;flex-direction:column;min-height:0">
+        <div style="flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(232,232,234,.1)"><div><b style="font-size:12.5px">Advanced filters</b><div style="font-size:10.5px;color:#80848d;margin-top:2px">Fine-tune readiness and review status</div></div><span style="flex:1"></span><button ref="{{assessmentFilterCloseRef}}" onClick="{{closeGatherFilters}}" aria-label="Close advanced filters" class="hv-soft" style="border:0;background:transparent;color:#8b8f96;font-size:17px;padding:7px 10px;min-width:44px;min-height:44px">✕</button></div>
+        <div style="flex:1;min-height:0">{{needFilterEl}}</div>
+      </aside>
+    </div>
+  </sc-if>
   </sc-if>
 
   <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
@@ -445,6 +474,13 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
           <div style="display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:4px 10px;background:transparent;border:1px solid {{lbStatusLine}};color:{{lbStatusFg}};margin-bottom:8px">{{lbStatus}}</div>
           <sc-if value="{{lbHasFit}}" hint-placeholder-val="{{ false }}">
             <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{lbFitFg}};margin-bottom:8px">{{lbFitLine}}</div>
+          </sc-if>
+          <sc-if value="{{lbHasAssessment}}" hint-placeholder-val="{{ false }}">
+            <div style="background:rgba(138,180,255,.08);border:1px solid rgba(138,180,255,.3);border-radius:4px;padding:8px 10px;margin-bottom:10px">
+              <div style="font-size:11px;font-weight:750;color:#b9cbff;margin-bottom:3px">{{lbAssessmentNeed}}</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#c2c5cb">confidence {{lbAssessmentConfidence}}% · quality {{lbAssessmentQuality}} · {{lbAssessmentReadiness}}</div>
+              <sc-if value="{{lbAssessmentReview}}" hint-placeholder-val="{{ false }}"><div style="font-size:10.5px;color:#ffd166;margin-top:3px">Review: {{lbAssessmentReviewText}}</div></sc-if>
+            </div>
           </sc-if>
           <div style="display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:12px;margin-bottom:10px">
             <span style="color:#80848d">Size</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">{{lbDims}}</span>
@@ -631,7 +667,8 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
           <button ref="{{helpCloseRef}}" onClick="{{toggleHelp}}" aria-label="Close help" data-tip="Close (esc)" class="hv-soft" style="border:0;background:transparent;border-radius:4px;color:#8b8f96;font-size:16px;padding:6px 10px;min-width:44px;min-height:44px">✕</button>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:#c2c5cb;margin-bottom:14px">
-          <div><b>Library</b> is the raw Figma estate plus uploads, opening on the judging queue: every asset awaits one verdict — <b>Pick</b> it into Review (Space) or <b>Reject</b> it out of the queue (X). Rejections are shared with the team and reversible under the Rejected filter. Or open a need on Ready and gather a shortlist for it.</div>
+          <div><b>Library</b> is the raw Figma estate plus uploads, opening on the judging queue: every asset awaits one verdict — <b>Pick</b> it into Review (Space) or <b>Reject</b> it out of the queue (X). Rejections are shared with the team and reversible under the Rejected filter.</div>
+          <div><b>Asset assessment</b> assigns every selectable Figma root one primary Need, confidence, derived reference-quality score, and one readiness state. Human-review status is separate and explains genuine uncertainty. Choose what you are making, start with a readiness view, then fine-tune only when needed. Scores are retrieval aids, not human taste verdicts.</div>
           <div><b>Review</b> holds candidates. Publish one to give it a need, a clear title and an optional usage note.</div>
           <div><b>Ready</b> is the destination: published assets organized by the concrete need they serve, with coverage per required format. Use one via <b>Open in Figma</b>.</div>
         </div>
@@ -652,7 +689,7 @@ class Component extends DCLogic {
   state = { phase:'load', view:'lib',
     needSel:'', readyQ:'',
     fi:0, page:'', q:'', shape:'', pageQ:'', pickF:'un',
-    gather:'', gDepth:0,
+    gather:'', aConfidence:'any', aQuality:'any', aReadiness:'best', aReview:'any', aSort:'best', gFilters:false,
     picks:{}, rejects:{}, rejQ:{}, needs:[], uploads:[],
     shared:{}, queue:{adds:{}, rms:[]}, who:'', sync:'off', snapTs:0, staleN:0, staleUp:0, staleHide:false, ext:'unknown',
     filterBatches:{}, pickBatches:{}, localFilterCount:0, localPickCount:0,
@@ -664,6 +701,7 @@ class Component extends DCLogic {
   ASSET_REMOTE = this.PUBLIC_BASE;
   BUCKET = 'https://synthflow-asset-picker-bucket.albertastabatsyan.workers.dev';
   ISSUE_REPO = 'albertastabatsyan/synthflow-asset-picker';
+  ASSESSMENT_INDEX = 'asset-assessments.v2.json';
   FILES = [
     {key:'7S0rDAMXsiV90VV5QXlvct', short:'Social & Ads', dir:'socialads'},
     {key:'tU7qa7rmvL1htnXEerNENN', short:'Marketing', dir:'marketing'}];
@@ -823,12 +861,19 @@ class Component extends DCLogic {
         this.ASSET_REMOTE=String(cfg.asset_url||root).replace(/\/?$/,'/');
         if(cfg.bucket_url!==undefined) this.BUCKET=String(cfg.bucket_url).replace(/\/$/,'');
         if(cfg.issue_repo) this.ISSUE_REPO=String(cfg.issue_repo);
+        if(cfg.assessment_index) this.ASSESSMENT_INDEX=String(cfg.assessment_index);
       }
     } catch(e){}
     const get = async (f) => {
       const r=await fetch(this.REMOTE+f.dir+'/data.json'); if(!r.ok) throw new Error('http'); return r.json(); };
     try {
-      const raws=await Promise.all(this.FILES.map(get));
+      const assessmentUrl=new URL(this.ASSESSMENT_INDEX,window.location.href).href;
+      const [raws,assessmentPayload]=await Promise.all([
+        Promise.all(this.FILES.map(get)),
+        fetch(assessmentUrl,{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null)
+      ]);
+      this._assessmentPayload=assessmentPayload&&assessmentPayload.schemaVersion===2?assessmentPayload:null;
+      this._assessments=(this._assessmentPayload&&this._assessmentPayload.assessments)||{};
       this.meta=raws.map(raw=>raw.meta||{});
       this.fsets=raws.map((raw,i)=>this.buildFs(this.FILES[i],raw));
     } catch(e){ this.setState({phase:'err'}); return; }
@@ -1064,25 +1109,27 @@ class Component extends DCLogic {
 
   buildFs(f, raw){
     const cards = raw.clusters.map(cl => { const w=cl.w||400, h=cl.h||300;
-      return { qid:f.key+'~'+cl.id, nid:cl.id, name:cl.name||'Untitled', page:(cl.page||'').trim(),
+      const qid=f.key+'~'+cl.id;
+      return { qid, nid:cl.id, name:cl.name||'Untitled', page:(cl.page||'').trim(),
+        pageId:cl.page_id||'', section:(cl.section||'').trim(), type:cl.type||'',
         pnorm:this.norm(cl.page), w, h, ar:w/h,
         url:this.ASSET_REMOTE+f.dir+'/renders/'+cl.img,
         fig:'https://www.figma.com/design/'+f.key+'/?node-id='+String(cl.id).replace(/[:;]/g,'-'),
-        srcShort:f.short, srcIdx:Math.max(0,this.FILES.indexOf(f)), custom:false,
+        srcShort:f.short, srcIdx:Math.max(0,this.FILES.indexOf(f)), custom:false, assessment:this._assessments[qid]||null,
         members:(cl.members||[]).map(m=>({name:m.name, url:this.ASSET_REMOTE+f.dir+'/renders/'+m.img})) }; });
     const pageOrder=[]; const pageCt={};
     for(const c of cards){ if(!(c.page in pageCt)){ pageCt[c.page]=0; pageOrder.push(c.page); } pageCt[c.page]++; }
     return {...f, cards, pageOrder, pageCt};
   }
   uploadCards(uploads){ return (uploads||this.state.uploads).map(u=>({ qid:u.id, nid:'', name:u.name,
-    page:'Uploads', pnorm:'uploads', w:u.w||800, h:u.h||600, ar:(u.w||800)/(u.h||600),
+    page:'Uploads', pageId:'', section:'', type:'UPLOAD', pnorm:'uploads', w:u.w||800, h:u.h||600, ar:(u.w||800)/(u.h||600),
     url:u.data, fig:'', srcShort:'Uploads', srcIdx:-1, custom:true, localOnly:true, members:[] })); }
   /* Shared Custom library (Worker-owned, live only): every teammate sees the
      same uploads; ids are "custom~<up_id>" like the legacy picker wrote. */
   libCards(){ const lib=this._libIndex||{}; const dims=this._libDims||{};
     return Object.keys(lib).map(id=>{ const m=lib[id]||{}; const d=dims[id]||{};
       const w=+m.w||d.w||0, h=+m.h||d.h||0;
-      return { qid:'custom~'+id, nid:'', name:m.name||'upload', page:'Uploads', pnorm:'uploads',
+      return { qid:'custom~'+id, nid:'', name:m.name||'upload', page:'Uploads', pageId:'', section:'', type:'UPLOAD', pnorm:'uploads',
         w, h, ar:(w&&h)?w/h:4/3, url:this.BUCKET+'/upload/'+id, fig:'',
         srcShort:'Uploads', srcIdx:-1, custom:true, lib:true, upId:id,
         who:m.who||'', ts:m.ts||'', members:[] }; }); }
@@ -1148,6 +1195,25 @@ class Component extends DCLogic {
     catch(e){ if(!this._quotaWarned){ this._quotaWarned=true; this.toast('Device storage is full — changes kept for this session only'); } } }
 
   need(id){ return this.state.needs.find(n=>n.id===id)||null; }
+  assessmentNeed(id){
+    return (((this._assessmentPayload&&this._assessmentPayload.needs)||[]).find(n=>n.id===id))||null;
+  }
+  assessmentQuickKey(){ const S=this.state;
+    if(S.aReadiness==='best') return 'best';
+    if(S.aReadiness==='adaptable') return 'adaptable';
+    if(S.aReadiness==='any') return 'all';
+    return 'custom'; }
+  applyAssessmentQuickView = (key) => {
+    const next={aReadiness:'any',shown:160};
+    if(key==='best') next.aReadiness='best';
+    else if(key==='adaptable') next.aReadiness='adaptable';
+    this.setState(next); };
+  toggleAssessmentReview = () => this.setState(s=>({aReview:s.aReview==='needs'?'any':'needs',shown:160}));
+  clearAssessmentFilters = () => this.setState({
+    aConfidence:'any',aQuality:'any',aReadiness:'any',aReview:'any',q:'',shown:160});
+  switchAssessmentNeed = (id) => {
+    const assessed=this.assessmentNeed(id); if(!assessed) return;
+    this.setState({view:'lib',gather:id,gFilters:false,fi:0,page:'',q:'',shape:'',shown:160,menu:false}); };
   needExists(id){ return (this._needs||this.state.needs).some(n=>n.id===id); }
   needLabel(id){ const n=this.need(id); return n?n.label:''; }
   effDest(d){ return this.need(d)?d:''; }
@@ -1179,7 +1245,8 @@ class Component extends DCLogic {
     if(!hit) return null;
     const nid=hit[0];
     const needs=this.needExists(nid)
-      ? this.state.needs.filter(x=>x.id!==id)
+      ? this.state.needs.filter(x=>x.id!==id).map(x=>x.id===nid?{...x,
+          spec:n.spec,formats:n.formats,note:n.note}:x)
       : this.state.needs.map(x=>x.id===id?{...x, id:nid, sharedCat:true}:x);
     const picks={}; for(const qid of Object.keys(this.state.picks)){ const e=this.state.picks[qid];
       picks[qid]=e.dest===id?{...e,dest:nid}:e; }
@@ -1213,91 +1280,172 @@ class Component extends DCLogic {
       return true; });
   }
 
-  // Diversified shortlist: round-robin across source pages, keeping every
-  // required format represented; each entry carries a visible reason.
-  shortlist(t0, t1, need){
-    const tag=(c,tier)=>({c, tier});
-    const byPage=new Map();
-    for(const x of [...t0.map(c=>tag(c,0)), ...t1.map(c=>tag(c,1))]){
-      if(!byPage.has(x.c.pnorm)) byPage.set(x.c.pnorm,[]);
-      byPage.get(x.c.pnorm).push(x); }
-    for(const [,arr] of byPage) arr.sort((a,b)=>a.tier-b.tier || (b.c.w*b.c.h)-(a.c.w*a.c.h));
-    const pages=[...byPage.keys()].sort((a,b)=>byPage.get(a)[0].tier-byPage.get(b)[0].tier);
-    const out=[]; const CAP=12;
-    const fmtCt={}; const fmts=(need.formats||[]).map(f=>f[0]+'×'+f[1]);
-    for(const f of fmts) fmtCt[f]=0;
-    let round=0;
-    while(out.length<CAP && round<3){
-      let took=false;
-      for(const p of pages){ if(out.length>=CAP) break;
-        const arr=byPage.get(p); if(!arr.length) continue;
-        let idx=0;
-        if(fmts.length){ const missing=fmts.filter(f=>!fmtCt[f]);
-          if(missing.length){ const mi=arr.findIndex(x=>{ const fl=this.fit(x.c,need);
-            return fl.ok&&!fl.free&&missing.includes(fl.label); });
-            if(mi>=0) idx=mi; } }
-        const x=arr.splice(idx,1)[0];
-        const fl=this.fit(x.c,need);
-        if(fl.ok&&!fl.free&&fmtCt[fl.label]!==undefined) fmtCt[fl.label]++;
-        out.push(x); took=true; }
-      if(!took) break; round++;
-    }
-    return out.map(x=>x.c);
-  }
-  gReason(c, need, tier){
-    const bits=[];
-    const f=this.fit(c,need);
-    if(f.ok&&!f.free) bits.push('fits '+f.label);
-    if(tier===0) bits.push('feeder page');
-    else if(tier===1){ const hay=(c.name+' '+c.page).toLowerCase();
-      const k=(need.kw||[]).find(k=>hay.includes(k));
-      bits.push(k?('keyword “'+k.trim()+'”'):'keyword'); }
-    else if(tier===3) bits.push('off-format');
-    if(c.members.length>1) bits.push('best of ×'+c.members.length);
+  gReason(c){
+    const a=c.assessment;
+    if(!a) return 'Assessment unavailable';
+    const readiness={best:'best match',adaptable:'worth adapting',ineligible:'ineligible'};
+    const bits=[a.primaryNeedLabel, 'confidence '+a.confidence+'%', 'quality '+a.quality, readiness[a.readiness]||a.readiness];
+    if((a.reviewReasons||[]).length) bits.push('review: '+this.assessmentReviewText(a.reviewReasons));
     return bits.join(' · ');
   }
+  assessmentReviewText(reasons){
+    const labels={
+      'missing-visual-evidence':'visual evidence is missing',
+      'low-category-confidence':'category confidence is low',
+      'close-category-match':'two categories are too close',
+      'competing-category-evidence':'another category also has strong evidence',
+      'readiness-boundary':'the score is close to a readiness boundary'};
+    return (reasons||[]).map(reason=>labels[reason]||reason).join(' · ');
+  }
   gatherData(need){
-    const S=this.state; const q=S.q.trim().toLowerCase();
-    const kws=need.kw||[]; const pset=new Set((need.pages||[]).map(p=>this.norm(p)));
-    const hasF=!!(need.formats&&need.formats.length);
-    const t=[[],[],[],[]]; this._gTier={};
-    const base=[...(this.fsets||[]).flatMap(fs=>fs.cards), ...this.libCards(), ...this.uploadCards()];
-    for(const c of base){
-      if(S.rejects[c.qid] && !S.picks[c.qid]) continue;   // ruled out of the estate
-      const hay=(c.name+' '+c.page).toLowerCase();
-      if(q && !hay.includes(q)) continue;
-      const feeder=pset.has(c.pnorm);
-      const kw=kws.length>0 && kws.some(k=>hay.includes(k));
-      const ok=this.fit(c,need).ok;
-      let ti;
-      if(hasF){ ti = feeder&&ok?0 : kw&&ok?1 : ok?2 : (feeder||kw)?3 : -1; }
-      else { ti = feeder?0 : kw?1 : 2; }
-      if(ti>=0){ t[ti].push(c); this._gTier[c.qid]=ti; }
-    }
-    for(const arr of t) arr.sort((a,b)=>a.pnorm.localeCompare(b.pnorm)||a.name.localeCompare(b.name));
-    const short=this.shortlist(t[0],t[1],need);
-    const shortSet=new Set(short.map(c=>c.qid));
-    const matchRest=[...t[0],...t[1]].filter(c=>!shortSet.has(c.qid));
-    const matchN=t[0].length+t[1].length;
-    const fl=this.fmtList(need);
-    const sections=[]; let total=0;
-    if(short.length){ sections.push({title:'Shortlist', reasons:true,
-      sub:'the strongest '+short.length+' of '+this.fmt(matchN)+' matches — spread across pages'+(hasF?' and formats':''), items:short}); total+=short.length; }
-    if(S.gDepth>=1 && matchRest.length){ sections.push({title:'All matches', reasons:true,
-      sub:'every other feeder-page or keyword match'+(hasF?' that fits '+fl:''), items:matchRest}); total+=matchRest.length; }
-    if(S.gDepth>=2){
-      if(hasF && t[2].length){ sections.push({title:'Right format, other pages',
-        sub:'fits '+fl+' but comes from elsewhere — judge relevance yourself', items:t[2]}); total+=t[2].length; }
-      if(hasF && t[3].length){ sections.push({title:'Off-format', reasons:true,
-        sub:'related, but does not fit '+fl+' — publishes as OFF-SPEC', items:t[3]}); total+=t[3].length; }
-      if(!hasF && t[2].length){ sections.push({title:'Everything else',
-        sub:'the rest of the library', items:t[2]}); total+=t[2].length; }
-    }
-    let more=null;
-    if(S.gDepth===0 && matchRest.length) more={label:'Show all '+this.fmt(matchN)+' matches', go:1};
-    else if(S.gDepth<=1 && (t[2].length||t[3].length)) more={label:hasF?('Show the rest of the library ('+this.fmt(t[2].length+t[3].length)+' more)'):('Show the rest of the library ('+this.fmt(t[2].length)+' more)'), go:2};
-    if(!short.length && !total) more=null;
-    return {sections, total, more};
+    const S=this.state, q=S.q.trim().toLowerCase();
+    const assigned=[...(this.fsets||[]).flatMap(fs=>fs.cards)]
+      .filter(c=>c.assessment&&c.assessment.primaryNeed===need.id);
+    const all=assigned.filter(c=>!q||((c.name+' '+c.page+' '+(c.section||'')).toLowerCase().includes(q)));
+    const band=(value,kind)=>kind==='confidence'?(value>=80?'high':value>=60?'medium':'low')
+      :(value>=75?'strong':value>=55?'usable':'weak');
+    const selected={confidence:S.aConfidence,quality:S.aQuality,readiness:S.aReadiness,review:S.aReview};
+    const matches=(c,overrides)=>{ const pick={...selected,...(overrides||{})};
+      const a=c.assessment;
+      if(pick.confidence!=='any'&&band(a.confidence,'confidence')!==pick.confidence) return false;
+      if(pick.quality!=='any'&&band(a.quality,'quality')!==pick.quality) return false;
+      if(pick.readiness!=='any'&&a.readiness!==pick.readiness) return false;
+      const needsReview=(a.reviewReasons||[]).length>0;
+      if(pick.review==='needs'&&!needsReview) return false;
+      if(pick.review==='classified'&&needsReview) return false;
+      return true; };
+    const filtered=all.filter(c=>matches(c));
+    const score=c=>c.assessment.confidence*.6+c.assessment.quality*.4;
+    const sorters={
+      best:(a,b)=>score(b)-score(a)||b.assessment.confidence-a.assessment.confidence||a.qid.localeCompare(b.qid),
+      quality:(a,b)=>b.assessment.quality-a.assessment.quality||b.assessment.confidence-a.assessment.confidence||a.qid.localeCompare(b.qid),
+      confidence:(a,b)=>b.assessment.confidence-a.assessment.confidence||b.assessment.quality-a.assessment.quality||a.qid.localeCompare(b.qid),
+      name:(a,b)=>a.name.localeCompare(b.name)||a.qid.localeCompare(b.qid)};
+    filtered.sort(sorters[S.aSort]||sorters.best);
+    const buckets={best:[],adaptable:[],ineligible:[]};
+    for(const c of filtered) buckets[c.assessment.readiness].push(c);
+    const defs={
+      best:['Best matches','directly useful references for this Need'],
+      adaptable:['Worth adapting','useful after editing, correction, crop, or reconstruction'],
+      ineligible:['Ineligible / no valid use','weak, incomplete, ambiguous, or unsuitable as a future reference']};
+    const sections=[];
+    for(const key of ['best','adaptable','ineligible']) if(buckets[key].length)
+      sections.push({title:defs[key][0],tier:key,reasons:true,sub:defs[key][1],items:buckets[key]});
+    const count=(list,fn)=>list.filter(fn).length;
+    const statsFor=list=>({
+      total:list.length,
+      confidence:{high:count(list,c=>c.assessment.confidence>=80),medium:count(list,c=>c.assessment.confidence>=60&&c.assessment.confidence<80),low:count(list,c=>c.assessment.confidence<60)},
+      quality:{strong:count(list,c=>c.assessment.quality>=75),usable:count(list,c=>c.assessment.quality>=55&&c.assessment.quality<75),weak:count(list,c=>c.assessment.quality<55)},
+      readiness:{best:count(list,c=>c.assessment.readiness==='best'),adaptable:count(list,c=>c.assessment.readiness==='adaptable'),ineligible:count(list,c=>c.assessment.readiness==='ineligible')},
+      review:{needs:count(list,c=>(c.assessment.reviewReasons||[]).length>0),classified:count(list,c=>(c.assessment.reviewReasons||[]).length===0)}});
+    const optionCounts={
+      confidence:{},quality:{},readiness:{},review:{}};
+    for(const value of ['any','high','medium','low']) optionCounts.confidence[value]=count(all,c=>matches(c,{confidence:value}));
+    for(const value of ['any','strong','usable','weak']) optionCounts.quality[value]=count(all,c=>matches(c,{quality:value}));
+    for(const value of ['any','best','adaptable','ineligible']) optionCounts.readiness[value]=count(all,c=>matches(c,{readiness:value}));
+    for(const value of ['any','needs','classified']) optionCounts.review[value]=count(all,c=>matches(c,{review:value}));
+    const stats={...statsFor(all),assigned:assigned.length,shown:filtered.length,shownStats:statsFor(filtered),optionCounts};
+    const total=sections.reduce((n,s)=>n+s.items.length,0);
+    return {sections,total,stats};
+  }
+
+  assessmentFilterRail(need,stats){
+    const h=React.createElement, S=this.state;
+    const helpLabel=(label,help)=>h('div',{style:{display:'flex',alignItems:'center',gap:5,padding:'0 1px 6px'}},
+      h('span',{style:{fontSize:10.5,fontWeight:750,letterSpacing:'.07em',textTransform:'uppercase',color:'#858a93'}},label),
+      h('button',{type:'button','aria-label':label+': '+help,'data-tip':help,className:'hv-soft',style:{display:'inline-flex',alignItems:'center',justifyContent:'center',width:28,height:28,minWidth:28,border:'1px solid rgba(232,232,234,.2)',borderRadius:'50%',background:'transparent',color:'#b1b5bd',fontSize:11,fontWeight:750,lineHeight:1,padding:0}},'?'));
+    const group=(label,stateKey,options,counts,help)=>h('div',{role:'group','aria-label':label,style:{borderTop:'1px solid rgba(232,232,234,.08)',padding:'10px 0 5px'}},
+      helpLabel(label,help),
+      h('div',{style:{display:'flex',flexWrap:'wrap',gap:4}},options.map(([value,text])=>{ const on=S[stateKey]===value;
+        const count=counts[value]||0, disabled=count===0&&!on;
+        return h('button',{key:value,type:'button','aria-label':text+' '+label.toLowerCase()+', '+count+' assets','aria-pressed':on?'true':'false',disabled,
+          onClick:()=>this.setState({[stateKey]:value,shown:160}),
+          className:on?'hv-bright':'hv-soft',style:{border:'1px solid '+(on?'#e4e7ec':'rgba(232,232,234,.14)'),background:on?'#e4e7ec':'transparent',
+            color:on?'#111214':'#c2c5cb',borderRadius:4,padding:'7px 9px',fontSize:10.5,fontWeight:700,minHeight:36,
+            opacity:disabled ? .38 : 1,cursor:disabled?'not-allowed':'pointer'}},text+' '+count); })));
+    return h('div',{style:{height:'100%',overflowY:'auto',padding:'12px 10px 20px'}},
+      h('div',{style:{padding:'0 2px 10px',fontSize:11,color:'#9da2ab',lineHeight:1.5}},
+        'Counts predict how many assets will remain while keeping your other choices.'),
+      group('Confidence','aConfidence',[['any','Any'],['high','High 80+'],['medium','Medium 60–79'],['low','Low <60']],stats.optionCounts.confidence,
+        'How sure we are that the asset belongs in the selected category. High = a clear match. Medium = probably right. Low = uncertain, so check it yourself. This score does not say whether the design is good.'),
+      group('Reference quality','aQuality',[['any','Any'],['strong','Strong 75+'],['usable','Usable 55–74'],['weak','Weak <55']],stats.optionCounts.quality,
+        'How useful the asset is as a design reference. Strong = complete, clear, and reusable. Usable = helpful but needs adaptation. Weak = incomplete, hard to read, or not very reusable. This is a rules-based score, not a taste judgment.'),
+      group('Readiness','aReadiness',[['any','Any'],['best','Best match'],['adaptable','Worth adapting'],['ineligible','Ineligible']],stats.optionCounts.readiness,
+        'How ready the asset is for this category. Best match = directly useful as a reference. Worth adapting = useful after editing or reframing. Ineligible = not suitable for this category.'),
+      group('Assessment review','aReview',[['any','Any'],['needs','Needs review'],['classified','Classified']],stats.optionCounts.review,
+        'Whether the automated assessment contains genuine uncertainty. Needs review = visual evidence is missing, categories compete, confidence is low, or a score is close to a boundary. Classified = no uncertainty rule was triggered. This is separate from readiness.'),
+      h('button',{type:'button',onClick:this.clearAssessmentFilters,className:'hv-soft','aria-label':'Clear all assessment filters and search',
+        style:{width:'100%',marginTop:12,border:'1px solid rgba(232,232,234,.18)',background:'transparent',color:'#c2c5cb',borderRadius:4,padding:'9px 12px',fontSize:11.5,fontWeight:700,minHeight:44}},'Clear all filters'),
+      h('div',{style:{borderTop:'1px solid rgba(232,232,234,.1)',padding:'10px 2px 0',fontSize:10.5,color:'#777c85',lineHeight:1.45}},
+        'Each asset gets one main category, one readiness state, and an independent review status with explicit reasons. Confidence and quality help you sort the library; they do not replace human judgment.'));
+  }
+  assessmentNeedControl(need){
+    const h=React.createElement;
+    const indexedNeeds=(this._assessmentPayload&&this._assessmentPayload.needs)||[];
+    const needCounts=(this._assessmentPayload&&this._assessmentPayload.summary&&this._assessmentPayload.summary.needs)||{};
+    return h('select',{value:need.id,'aria-label':'What are you making?',onChange:e=>this.switchAssessmentNeed(e.target.value),
+      style:{minWidth:220,maxWidth:'min(320px,72vw)',background:'#25282d',border:'1px solid oklch(0.55 0.17 262)',borderRadius:4,
+        padding:'7px 30px 7px 9px',color:'#e8e8ea',fontSize:12,fontWeight:700,minHeight:44,outline:'none'}},
+      indexedNeeds.map(n=>h('option',{key:n.id,value:n.id},n.label+' · '+(needCounts[n.id]||0))));
+  }
+  assessmentQuickViews(stats){
+    const h=React.createElement, current=this.assessmentQuickKey();
+    const defs=[
+      ['best','Best matches',stats.optionCounts.readiness.best,'Directly useful references'],
+      ['adaptable','Worth adapting',stats.optionCounts.readiness.adaptable,'Useful after editing or reframing'],
+      ['all','All',stats.optionCounts.readiness.any,'Every assessed asset for this Need']];
+    return h('div',{role:'group','aria-label':'Readiness views',style:{display:'flex',flexWrap:'wrap',gap:4}},
+      defs.map(([key,label,count,tip])=>{ const on=current===key, disabled=count===0&&!on;
+        return h('button',{key,type:'button','aria-pressed':on?'true':'false','aria-label':label+', '+count+' assets',
+          disabled,'data-tip':tip,onClick:()=>this.applyAssessmentQuickView(key),className:on?'hv-bright':'hv-soft',
+          style:{border:'1px solid '+(on?'#e4e7ec':'rgba(232,232,234,.18)'),background:on?'#e4e7ec':'rgba(17,18,20,.28)',
+            color:on?'#111214':'#c7cad0',borderRadius:4,padding:'7px 9px',fontSize:11,fontWeight:750,minHeight:36,
+            opacity:disabled ? .38 : 1,cursor:disabled?'not-allowed':'pointer'}},label+' '+count); }));
+  }
+  assessmentReviewToggle(stats){
+    const h=React.createElement, on=this.state.aReview==='needs', count=stats.optionCounts.review.needs;
+    return h('div',{role:'group','aria-label':'Review status',style:{display:'flex',alignItems:'center',gap:6,paddingLeft:12,borderLeft:'1px solid rgba(232,232,234,.18)'}},
+      h('span',{style:{fontSize:10.5,fontWeight:750,letterSpacing:'.06em',textTransform:'uppercase',color:'#8f96a5'}},'Review status'),
+      h('button',{type:'button','aria-pressed':on?'true':'false','aria-label':'Only show assets needing human review, '+count+' assets',
+        onClick:this.toggleAssessmentReview,disabled:count===0&&!on,className:on?'hv-bright':'hv-soft',
+        style:{border:'1px solid '+(on?'#d4a72c':'rgba(232,232,234,.18)'),background:on?'#ffe49a':'rgba(17,18,20,.28)',
+          color:on?'#32260a':'#c7cad0',borderRadius:4,padding:'7px 9px',fontSize:11,fontWeight:750,minHeight:36,
+          opacity:count===0&&!on?.38:1,cursor:count===0&&!on?'not-allowed':'pointer'}},(on?'☑':'☐')+' Needs human review '+count));
+  }
+  assessmentActiveFilters(){
+    const h=React.createElement, S=this.state, chips=[], quick=this.assessmentQuickKey();
+    const add=(key,label)=>chips.push({key,label,clear:()=>this.setState({[key]:'any',shown:160})});
+    const confidence={high:'High confidence',medium:'Medium confidence',low:'Low confidence'};
+    const quality={strong:'Strong quality',usable:'Usable quality',weak:'Weak quality'};
+    const readiness={best:'Best match',adaptable:'Worth adapting',ineligible:'Ineligible'};
+    const review={classified:'Classified'};
+    if(S.aConfidence!=='any') add('aConfidence',confidence[S.aConfidence]);
+    if(S.aQuality!=='any') add('aQuality',quality[S.aQuality]);
+    if(quick==='custom'&&S.aReadiness!=='any') add('aReadiness',readiness[S.aReadiness]);
+    if(S.aReview==='classified') add('aReview',review[S.aReview]);
+    if(S.q.trim()) chips.push({key:'q',label:'Search: '+S.q.trim(),clear:()=>this.setState({q:'',shown:160})});
+    if(!chips.length) return null;
+    return h('div',{style:{display:'flex',flexWrap:'wrap',alignItems:'center',gap:5,width:'100%'},'aria-label':'Active assessment filters'},
+      h('span',{style:{fontSize:10.5,fontWeight:750,color:'#aeb9d6',marginRight:2}},'Active:'),
+      ...chips.map(c=>h('button',{key:c.key,type:'button',onClick:c.clear,'aria-label':'Remove '+c.label+' filter',className:'hv-soft',
+        style:{border:'1px solid rgba(138,180,255,.45)',background:'rgba(138,180,255,.08)',color:'#c7d6ff',borderRadius:4,
+          padding:'6px 8px',fontSize:10.5,fontWeight:700,minHeight:32}},c.label+' ×')),
+      h('button',{type:'button',onClick:this.clearAssessmentFilters,className:'hv-soft','aria-label':'Clear all assessment filters and search',
+        style:{border:0,background:'transparent',color:'#aeb9d6',borderRadius:4,padding:'6px 8px',fontSize:10.5,fontWeight:750,minHeight:32}},'Clear all'));
+  }
+  assessmentSortControl(){
+    const h=React.createElement;
+    return h('label',{style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,color:'#aeb9d6',whiteSpace:'nowrap'}},
+      'Sort',h('select',{value:this.state.aSort,'aria-label':'Sort assessment results',onChange:e=>this.setState({aSort:e.target.value,shown:160}),
+        style:{background:'#25282d',border:'1px solid oklch(0.45 0.09 262)',borderRadius:4,padding:'6px 26px 6px 8px',
+          color:'#e8e8ea',fontSize:11,fontWeight:700,minHeight:36,outline:'none'}},
+        h('option',{value:'best'},'Best match'),h('option',{value:'quality'},'Quality'),
+        h('option',{value:'confidence'},'Confidence'),h('option',{value:'name'},'Name')));
+  }
+  assessmentSummary(stats){
+    const h=React.createElement;
+    return h('div',{style:{fontFamily:'JetBrains Mono, monospace',fontSize:10.5,color:'#b7c0d8',whiteSpace:'nowrap'}},
+      stats.shown+' shown of '+stats.total);
   }
 
   layout(items, gw, targetH, narrow){
@@ -1329,7 +1477,7 @@ class Component extends DCLogic {
     if(this.state.shown<t) this.setState(s=>({shown:Math.min(t,s.shown+160)})); }
   /* Arrow-key cursor through the Library grid — moves real focus, so the
      focus ring is the cursor and Enter/Space act on the focused tile. */
-  rail(){ return this.rootEl?this.rootEl.querySelector('nav[aria-label="Sources and pages"]'):null; }
+  rail(){ return this.rootEl?this.rootEl.querySelector('nav[data-lib-rail="1"]'):null; }
   railMove(dir){ const rail=this.rail(); if(!rail) return;
     const btns=[...rail.querySelectorAll('button')]; if(!btns.length) return;
     let i=btns.indexOf(document.activeElement);
@@ -1374,6 +1522,7 @@ class Component extends DCLogic {
   confirmCancelRef=el=>{ if(el) setTimeout(()=>el.focus(),30); };
   helpCloseRef=el=>{ if(el&&!this._helpFocused){ this._helpFocused=true; setTimeout(()=>el.focus(),30); } };
   lbCloseRef=el=>{ if(el && !this._lbFocused){ this._lbFocused=true; setTimeout(()=>el.focus(),30); } };
+  assessmentFilterCloseRef=el=>{ if(el&&!this._assessmentFilterFocused){ this._assessmentFilterFocused=true; setTimeout(()=>el.focus(),30); } };
   fileRef=el=>{ this.fileEl=el; };
   libSearchRef=el=>{ this.libSearchEl=el; };
   libSearchRef2=el=>{ this.libSearchEl2=el; };
@@ -1561,7 +1710,8 @@ class Component extends DCLogic {
         else msg='Need updated — renamed in this browser only'; }
       this.setState({needs,dlg:null},()=>this.save()); this.restoreFocus(); this.toast(msg); }
     else {
-      const finish=(id,sharedCat,msg)=>{ const nn={id,label:name,sharedCat,spec,note,formats,pages:[],kw:name.toLowerCase().split(/\s+/).filter(w=>w.length>3)};
+      const finish=(id,sharedCat,msg)=>{ const nn={id,label:name,sharedCat,spec,note,formats,
+        pages:[],kw:name.toLowerCase().split(/\s+/).filter(w=>w.length>3)};
         const nx=[...this.state.needs,nn]; this._needs=nx;
         this.setState({needs:nx,dlg:null,needSel:id},()=>this.save()); this.restoreFocus(); this.toast(msg); };
       if(this.state.sync==='live'){
@@ -1626,11 +1776,24 @@ class Component extends DCLogic {
   lbDupe(d){ const lb=this.state.lb; if(!lb) return; const c=this.card(lb.ids[lb.idx]); if(!c) return;
     const n=Math.max(1,c.members.length); this.setState({lb:{...lb,mi:(lb.mi+d+n)%n}}); }
 
-  startGather(id){ const go=gid=>{ this.setState({view:'lib', gather:gid, gDepth:0, fi:0, page:'', q:'', shape:'', shown:160, menu:false});
-      this.toast('Gathering for '+this.needLabel(gid)+' — starting from a shortlist'); };
-    if(this.state.sync==='live'&&this.need(id)&&!this.isSharedNeed(id)) this.promoteNeed(id).then(nid=>go(nid||id));
-    else go(id); }
-  stopGather = () => this.setState({gather:'', gDepth:0, q:'', shown:160});
+  startGather(id){
+    const assessed=this.assessmentNeed(id);
+    if(!assessed){ this.toast('No indexed assessment exists for this need'); return; }
+    this.setState({view:'lib', gather:id, gFilters:false,
+      fi:0, page:'', q:'', shape:'', shown:160, menu:false,
+      aConfidence:'any',aQuality:'any',aReadiness:'best',aReview:'any',aSort:'best'});
+    this.toast('Showing the full assessment for '+assessed.label);
+  }
+  stopGather = () => this.setState({gather:'', gFilters:false, q:'', shown:160});
+  openAssessmentFilters = () => {
+    if(this.state.gFilters) return;
+    this.pushFocus(); this._assessmentFilterFocused=false;
+    this.setState({gFilters:true}); };
+  closeAssessmentFilters = () => {
+    if(!this.state.gFilters) return;
+    this._assessmentFilterFocused=false;
+    this.setState({gFilters:false},()=>this.restoreFocus()); };
+  toggleAssessmentFilters = () => this.state.gFilters?this.closeAssessmentFilters():this.openAssessmentFilters();
 
   linksFor(entries){ const lines=[];
     for(const [qid,p] of entries){ const c=this.card(qid); if(c && !c.custom) lines.push(this.dispName(c,p)+' — '+c.fig); }
@@ -1758,12 +1921,13 @@ class Component extends DCLogic {
     const t=(e.target.tagName||'').toLowerCase();
     const inField=t==='input'||t==='textarea'||t==='select';
     if(e.metaKey||e.ctrlKey) return;
-    const {lb,dlg,help,menu,view}=this.state;
+    const {lb,dlg,help,menu,view,gFilters}=this.state;
     // the focus trap and Escape must also work while a form field has focus —
     // the dialogs are mostly made of form fields
-    if(e.key==='Tab'&&(dlg||help||lb)){ this.trapTab(e); return; }
+    if(e.key==='Tab'&&(dlg||help||lb||gFilters)){ this.trapTab(e); return; }
     if(dlg){ if(e.key==='Escape'){ this.setState({dlg:null}); this.restoreFocus(); } return; }
     if(help){ if(e.key==='Escape'){ this.setState({help:false}); this.restoreFocus(); } return; }
+    if(gFilters){ if(e.key==='Escape') this.closeAssessmentFilters(); return; }
     if(inField) return;
     if(menu){ if(e.key==='Escape') this.setState({menu:false}); return; }
     if(lb){
@@ -1846,6 +2010,9 @@ class Component extends DCLogic {
         hvc:on?'hv-bright':'hv-soft',
         hasBadge:v==='rev'&&candE.length>0, badge:String(candE.length),
         go:()=>this.setState({view:v, menu:false}) }; });
+    const assessmentFilterOn=!!S.gather;
+    const assessmentNeedIds=new Set(((this._assessmentPayload&&this._assessmentPayload.needs)||[]).map(n=>n.id));
+    const assessmentFilterTarget=S.gather||(S.needSel&&assessmentNeedIds.has(S.needSel)?S.needSel:((this._assessmentPayload&&this._assessmentPayload.needs&&this._assessmentPayload.needs[0]&&this._assessmentPayload.needs[0].id)||(S.needs[0]&&S.needs[0].id)));
 
     // sync pill
     let syncDot='#84888f', syncLabel='Offline', syncTitle='';
@@ -1969,11 +2136,11 @@ class Component extends DCLogic {
     // ---------- LIBRARY ----------
     const srcs=ok?this.sources():[];
     const fs=ok?this.fs():null;
-    const gatherNeed=ok&&S.gather?this.need(S.gather):null;
-    let libSectionsRaw=[], gMoreDef=null, libEmptyHint=null, pickCounts=null;
+    const gatherNeed=ok&&S.gather?this.assessmentNeed(S.gather):null;
+    let libSectionsRaw=[], libEmptyHint=null, pickCounts=null, gatherDef=null;
     if(ok && S.view==='lib'){
       if(gatherNeed){ const gd=this.gatherData(gatherNeed);
-        libSectionsRaw=gd.sections; this._libTotal=gd.total; gMoreDef=gd.more; }
+        gatherDef=gd; libSectionsRaw=gd.sections; this._libTotal=gd.total; }
       else if(fs){
         const all=this.filtered();
         const pickedAll=all.filter(c=>S.picks[c.qid]);
@@ -2071,14 +2238,23 @@ class Component extends DCLogic {
           else if(isCand){ actLabel='↩'; actFg='#8b8f96'; actLine='rgba(232,232,234,.16)'; actAria='Remove '+dn+' from Review — back to the queue'; }
           else if(isRej){ actAria='Pick '+dn+' for review — clears the rejection'; }
           let sub=c.page, subFg='#80848d';
-          if(gatherNeed){ const ti=this._gTier?this._gTier[c.qid]:2;
-            const reason=sec.reasons?this.gReason(c,gatherNeed,ti):'';
-            sub=reason?(reason+' · '+c.page):c.page;
-            subFg=reason&&reason.startsWith('fits')?'#46c270':'#80848d'; }
+          const assessment=gatherNeed?c.assessment:null;
+          let assessmentBg='',assessmentLine='',assessmentFg='';
+          if(assessment){
+            if(assessment.readiness==='best'){ assessmentBg='#173a25';assessmentLine='#46c270';assessmentFg='#b9f2ca'; }
+            else if(assessment.readiness==='adaptable'){ assessmentBg='#1f304e';assessmentLine='#6f9def';assessmentFg='#d1ddff'; }
+            else { assessmentBg='#492326';assessmentLine='#dc6668';assessmentFg='#ffd1d2'; }
+          }
           else if(c.members.length>1) sub=c.page+' · ×'+c.members.length;
           tiles.push({ key:c.qid, img:c.url, name:dn, sub, subFg, hasFig:!c.custom, fig:c.fig, figAria:'Open '+dn+' in Figma — new tab',
+            hasAssessment:!!assessment,
+            assessmentMatch:assessment?('Match '+assessment.confidence+'%'):'',
+            assessmentQuality:assessment?('Quality '+assessment.quality):'',
+            assessmentReadiness:assessment?({best:'Best match',adaptable:'Worth adapting',ineligible:'Ineligible'}[assessment.readiness]||assessment.readiness):'',
+            assessmentNeedsReview:!!(assessment&&(assessment.reviewReasons||[]).length),
+            assessmentTip:assessment?this.gReason(c):'',assessmentBg,assessmentLine,assessmentFg,
             ld:(e)=>this.measure(c, e.target),
-            aria:dn+' — '+c.page+' — '+this.dims(c)+(isReady?' — on Ready':(isCand?' — in Review':(isRej?' — rejected':'')))+' — Enter zooms, Space picks'+((!pk||isCand)&&!isRej?', X rejects':''),
+            aria:dn+' — '+c.page+' — '+this.dims(c)+(assessment?(' — '+this.gReason(c)):'')+(isReady?' — on Ready':(isCand?' — in Review':(isRej?' — rejected':'')))+' — Enter zooms, Space picks'+((!pk||isCand)&&!isRej?', X rejects':''),
             w:Math.round(t.w*10)/10, h:Math.round(t.h),
             op:dim?'.45':'1',
             isReady:!!isReady, isCand:!!isCand, isRej,
@@ -2157,6 +2333,21 @@ class Component extends DCLogic {
           ctFg:on?'rgba(17,18,20,.6)':(id?'#8b8f96':'#6b6f76'),
           go:()=>this.setState({pickF:id, shown:160})}; });
     const uploadsEmpty=!!(fs&&fs.custom&&!fs.cards.length&&!gatherNeed);
+    const emptyAssessmentStats={total:0,assigned:0,shown:0,
+      confidence:{high:0,medium:0,low:0},quality:{strong:0,usable:0,weak:0},
+      readiness:{best:0,adaptable:0,ineligible:0},review:{needs:0,classified:0},
+      optionCounts:{confidence:{any:0,high:0,medium:0,low:0},quality:{any:0,strong:0,usable:0,weak:0},
+        readiness:{any:0,best:0,adaptable:0,ineligible:0},review:{any:0,needs:0,classified:0}}};
+    const gatherStats=gatherDef?gatherDef.stats:emptyAssessmentStats;
+    const needFilterEl=gatherNeed&&gatherDef?this.assessmentFilterRail(gatherNeed,gatherStats):null;
+    const gatherTierEl=gatherNeed&&gatherDef?this.assessmentSummary(gatherStats):null;
+    const gatherNeedSelectEl=gatherNeed?this.assessmentNeedControl(gatherNeed):null;
+    const gatherQuickViewsEl=gatherNeed&&gatherDef?this.assessmentQuickViews(gatherStats):null;
+    const gatherReviewToggleEl=gatherNeed&&gatherDef?this.assessmentReviewToggle(gatherStats):null;
+    const gatherActiveFiltersEl=gatherNeed?this.assessmentActiveFilters():null;
+    const gatherSortEl=gatherNeed?this.assessmentSortControl():null;
+    const gatherRuleCount=[S.aConfidence,S.aQuality].filter(v=>v!=='any').length
+      +(S.aReadiness==='ineligible'?1:0)+(S.aReview==='classified'?1:0);
 
     // ---------- LIGHTBOX ----------
     const lb=S.lb; let lbv={};
@@ -2184,6 +2375,7 @@ class Component extends DCLogic {
           pickInfo=bits.join(' · '); }
         else if(isRejLb) pickInfo='rejected'+(rejE.by?(' by '+rejE.by):'')+(rejE.shared?' · shared':'');
         const meta=c.srcIdx>=0?this.meta[c.srcIdx]:null;
+        const assessment=c.assessment;
         const fresh=meta?('captured '+this.fmtDate(meta.captured_at)+(meta.lastModified?(' · Figma modified '+this.fmtDate(meta.lastModified)):''))
           :(c.lib?('team upload'+(c.ts?(' · added '+this.fmtDate(c.ts)):'')):'upload — lives in this browser');
         lbv={ lbCounter:(lb.idx+1)+' / '+lb.ids.length, lbName:dn, lbAria:'Asset detail: '+dn,
@@ -2192,6 +2384,13 @@ class Component extends DCLogic {
           lbStatusLine: isReady?(offspec?'#ffd166':'#b5ff90'):(isCand?'oklch(0.45 0.09 262)':(isRejLb?'rgba(234,74,75,.5)':'rgba(232,232,234,.25)')),
           lbStatusFg: isReady?(offspec?'#ffd166':'#b5ff90'):(isCand?'#8ab4ff':(isRejLb?'#ff9b9c':'#c2c5cb')),
           lbHasFit:hasFit, lbFitLine:fitLine, lbFitFg:fitFg,
+          lbHasAssessment:!!assessment,
+          lbAssessmentNeed:assessment?assessment.primaryNeedLabel:'',
+          lbAssessmentConfidence:assessment?String(assessment.confidence):'',
+          lbAssessmentQuality:assessment?String(assessment.quality):'',
+          lbAssessmentReadiness:assessment?({best:'best match',adaptable:'worth adapting',ineligible:'ineligible'}[assessment.readiness]||assessment.readiness):'',
+          lbAssessmentReview:!!(assessment&&(assessment.reviewReasons||[]).length),
+          lbAssessmentReviewText:assessment?this.assessmentReviewText(assessment.reviewReasons):'',
           lbDims:c.w?(Math.round(c.w)+'×'+Math.round(c.h)+' px · '+this.ratioLabel(c.ar)):'size unknown',
           lbSrc:c.lib?('Team upload · by '+(c.who||'unknown')):(c.srcShort+' · '+c.page),
           lbVariants:c.members.length>1?(c.members.length+' near-duplicates'):'unique',
@@ -2313,6 +2512,16 @@ class Component extends DCLogic {
       rootRef:this.rootRef, wide:!narrow, narrow,
       ctlH, chipH, navH, navPad, pchipH, pchipPad, tabPad, btnPad, pickPad, pickH, capH,
       navTabs,
+      assessmentFilterCur:assessmentFilterOn?'page':'false',
+      assessmentFilterLabel:narrow?'Assess':'Asset assessment',
+      assessmentFilterBg:assessmentFilterOn?'oklch(0.30 0.05 262)':'transparent',
+      assessmentFilterFg:assessmentFilterOn?'#b9cbff':'#8ab4ff',
+      assessmentFilterLine:assessmentFilterOn?'oklch(0.55 0.17 262)':'oklch(0.45 0.09 262)',
+      assessmentFilterHover:assessmentFilterOn?'hv-bright':'hv-blue',
+      openAssessmentFilter:()=>{
+        if(assessmentFilterTarget) this.startGather(assessmentFilterTarget);
+        else this.setState({view:'ready', menu:false});
+      },
       syncDot, syncLabel, syncTitle,
       canSubmit:ok&&S.sync!=='live'&&queuedN>0, queuedN:String(queuedN), submitPicks:this.submitPicks,
       submitLabel:(S.queue.sentAt?'Resubmit ':'Submit ')+queuedN+(narrow?'':' to team'),
@@ -2352,7 +2561,8 @@ class Component extends DCLogic {
       ].filter(Boolean).join(' '),
       revEmpty:ok&&!candE.length, revGroups,
       // library
-      showRail:!narrow&&!gatherNeed, hasPages:!!(fs&&!fs.all&&!fs.custom), noPages:!!(fs&&(fs.all||fs.custom)),
+      showRail:!narrow&&!gatherNeed, needFilterEl,
+      hasPages:!!(fs&&!fs.all&&!fs.custom), noPages:!!(fs&&(fs.all||fs.custom)),
       noPagesHint:fs&&fs.all?'Searching across both Figma files and uploads. Pick a single source to browse its pages.':'Uploads have no Figma pages.',
       pageRows, pageQ:S.pageQ, onPageQ:(e)=>this.setState({pageQ:e.target.value}),
       libRows,
@@ -2361,7 +2571,7 @@ class Component extends DCLogic {
       pageSelectEl:(fs&&!fs.all&&!fs.custom)?this.sel(S.page,(e)=>this.setState({page:e.target.value, shown:160}),
         [['','All pages'],...fs.pageOrder.map(p=>[p,p])],'Page',150):null,
       libBarShow:!uploadsEmpty||narrow,
-      libQ:S.q, onLibQ:(e)=>this.setState({q:e.target.value, shown:160, gDepth:S.gather?Math.max(1,S.gDepth):S.gDepth}),
+      libQ:S.q, onLibQ:(e)=>this.setState({q:e.target.value, shown:160}),
       libPh:narrow?'Search…':'Search name or page…  ( / )',
       gatherPh:narrow?'Search…':'Search within results…  ( / )',
       libFilters:!uploadsEmpty,
@@ -2370,16 +2580,29 @@ class Component extends DCLogic {
       onFiles:this.onFiles, fileRef:this.fileRef,
       stageDragOver:this.stageDragOver, stageDrop:this.stageDrop,
       gatherOn:!!gatherNeed, gatherOff:!gatherNeed,
-      gatherLabel:gatherNeed?gatherNeed.label:'', gatherSpec:gatherNeed?((gatherNeed.spec?gatherNeed.spec+' · ':'')+(this.fmtList(gatherNeed)||'any format')):'',
+      gatherSpec:gatherNeed?(this.fmt(gatherStats.assigned)+' assessed'):'',
+      gatherTierEl,gatherNeedSelectEl,gatherQuickViewsEl,gatherReviewToggleEl,gatherActiveFiltersEl,gatherSortEl,
+      gatherRuleCount:String(gatherRuleCount),gatherHasRules:gatherRuleCount>0,
+      gatherFiltersExpanded:S.gFilters?'true':'false',
+      toggleGatherFilters:this.toggleAssessmentFilters,
+      closeGatherFilters:this.closeAssessmentFilters,
+      assessmentFilterCloseRef:this.assessmentFilterCloseRef,
+      gatherFilterDrawer:!!(gatherNeed&&S.gFilters),
       stopGather:this.stopGather,
-      gMore:!!gMoreDef, gMoreLabel:gMoreDef?gMoreDef.label:'',
-      gMoreGo:()=>{ if(gMoreDef) this.setState({gDepth:gMoreDef.go, shown:320}); },
       uploadsEmpty,
       uploadsEmptyHint:S.sync==='live'
         ?'Drop images anywhere here, or use Add images. Uploads go to the shared team library — everyone sees them.'
         :'Drop images anywhere here, or use Add images. The team bucket is unreachable, so uploads stay in this browser.',
       noResults:ok&&S.view==='lib'&&!uploadsEmpty&&(this._libTotal||0)===0,
-      noResultsHint:gatherNeed?'No matches — clear the search or show more of the library below.':(libEmptyHint||'Nothing matches — clear the search or shape filter.'),
+      noResultsAssessment:!!gatherNeed,
+      noResultsCanAdapt:!!(gatherNeed&&gatherStats.readiness.adaptable),
+      noResultsHint:gatherNeed
+        ?(gatherStats.readiness.adaptable
+          ?'No assessed assets match this combination. Clear the filters or switch to assets worth adapting.'
+          :'No assessed assets match this combination. Clear the filters or change the search.')
+        :(libEmptyHint||'Nothing matches — clear the search or shape filter.'),
+      clearAssessmentFilters:this.clearAssessmentFilters,
+      showAdaptableAssessment:()=>this.applyAssessmentQuickView('adaptable'),
       libSections,
       imgErr:this.imgErr, gridRef:this.gridRef, sentinelRef:this.sentinelRef,
       libSearchRef:this.libSearchRef, libSearchRef2:this.libSearchRef2, readySearchRef:this.readySearchRef,
