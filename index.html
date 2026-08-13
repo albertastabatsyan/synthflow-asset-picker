@@ -322,12 +322,6 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
             </sc-if>
           </div>
         </sc-if>
-        <sc-if value="{{hasCtx}}" hint-placeholder-val="{{ true }}">
-          <div style="flex:none;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:7px 16px;border-bottom:1px solid rgba(232,232,234,.06);background:#111214">
-            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d;white-space:nowrap;flex:none">{{statLine}}</div>
-            <sc-if value="{{hasCtxHint}}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;color:#80848d;min-width:0">{{ctxHint}}</div></sc-if>
-          </div>
-        </sc-if>
       </sc-if>
       <sc-if value="{{gatherOn}}" hint-placeholder-val="{{ false }}">
         <div style="flex:none;padding:10px 16px;background:oklch(0.30 0.05 262);border-bottom:1px solid oklch(0.45 0.09 262);display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px">
@@ -1972,7 +1966,7 @@ class Component extends DCLogic {
     const srcs=ok?this.sources():[];
     const fs=ok?this.fs():null;
     const gatherNeed=ok&&S.gather?this.need(S.gather):null;
-    let libSectionsRaw=[], gMoreDef=null, libStat=null, libEmptyHint=null, pickCounts=null, ctxHint=null, ctxShow=true;
+    let libSectionsRaw=[], gMoreDef=null, libEmptyHint=null, pickCounts=null;
     if(ok && S.view==='lib'){
       if(gatherNeed){ const gd=this.gatherData(gatherNeed);
         libSectionsRaw=gd.sections; this._libTotal=gd.total; gMoreDef=gd.more; }
@@ -1986,6 +1980,8 @@ class Component extends DCLogic {
         // asset still awaiting a verdict; Picked shows every pick at once —
         // Review candidates and Ready assets together; Rejected holds the
         // passed-on assets for reconsideration; All keeps everything.
+        // Every tab explains itself the same way: one section-header layer
+        // (title mirroring the tab · count · hint) at the top of the grid.
         if(S.pickF==='picked'){
           const pt=c=>S.picks[c.qid].t||0;
           const rev=pickedAll.filter(c=>S.picks[c.qid].status==='cand').sort((a,b)=>pt(b)-pt(a));
@@ -1995,34 +1991,28 @@ class Component extends DCLogic {
           if(rdy.length) libSectionsRaw.push({title:'On Ready',
             sub:'published — grouped by need on the Ready screen', items:rdy});
           this._libTotal=pickedAll.length;
-          libStat=this.fmt(pickedAll.length)+' picked';
-          // the In Review / On Ready section headers say it all — one
-          // header layer, no strip above them
-          ctxShow=false;
           libEmptyHint='Nothing picked in this scope yet — picking happens in the Unpicked queue.';
         } else if(S.pickF==='rejected'){
           const rt=c=>S.rejects[c.qid].t||0;
           const items=[...rejAll].sort((a,b)=>rt(b)-rt(a));
-          // single-section view: the context strip carries the label — no
-          // in-grid header repeating it
-          if(items.length) libSectionsRaw.push({title:'',sub:'',items});
+          if(items.length) libSectionsRaw.push({title:'Rejected',
+            sub:'consciously passed on — restore anytime; picking one clears the rejection', items});
           this._libTotal=items.length;
-          libStat=this.fmt(items.length)+' rejected';
-          ctxHint='consciously passed on — restore anytime; picking one clears the rejection';
           libEmptyHint='Nothing rejected in this scope.';
         } else if(S.pickF==='un'){
           const un=all.filter(c=>!S.picks[c.qid]&&!S.rejects[c.qid]);
-          libSectionsRaw=[{title:'',sub:'',items:un}]; this._libTotal=un.length;
-          libStat=this.fmt(un.length)+' to judge'
-            +(pickedAll.length?(' · '+this.fmt(pickedAll.length)+' picked'):'')
-            +(rejAll.length?(' · '+this.fmt(rejAll.length)+' rejected'):'');
+          if(un.length) libSectionsRaw.push({title:'Unpicked',
+            sub:'the judging queue — every asset awaits one verdict · Space picks · X rejects', items:un});
+          this._libTotal=un.length;
           if(!un.length&&(pickedAll.length||rejAll.length))
             libEmptyHint='Everything here is judged — '+this.fmt(pickedAll.length)+' picked · '
               +this.fmt(rejAll.length)+' rejected. Pick another page, or revisit them under Picked and Rejected.';
         } else {
-          libSectionsRaw=[{title:'',sub:'',items:all}]; this._libTotal=all.length;
-          libStat=this.fmt(all.length)+' assets';
-          ctxHint='everything in scope — judged assets sink to the dimmed groups at the bottom';
+          // n pins the full scope count — the sink pass below moves judged
+          // items into their own bottom groups, shrinking items
+          if(all.length) libSectionsRaw.push({title:'All', n:this.fmt(all.length),
+            sub:'everything in scope — judged assets sink to the dimmed groups at the bottom', items:all});
+          this._libTotal=all.length;
         }
       }
     }
@@ -2103,7 +2093,7 @@ class Component extends DCLogic {
         rows.push({key:'r'+(ri++), tiles});
       }
       libSections.push({key:sec.title||'main', hasHead:!!sec.title, title:sec.title, sub:sec.sub,
-        n:this.fmt(sec.items.length), rows});
+        n:sec.n||this.fmt(sec.items.length), rows});
     }
     this._libQids=[];
     { let q2=S.shown;
@@ -2361,10 +2351,7 @@ class Component extends DCLogic {
         srcs.map((f,i)=>[String(i),f.short]),'Source',150),
       pageSelectEl:(fs&&!fs.all&&!fs.custom)?this.sel(S.page,(e)=>this.setState({page:e.target.value, shown:160}),
         [['','All pages'],...fs.pageOrder.map(p=>[p,p])],'Page',150):null,
-      statLine:libStat!==null?libStat:(this.fmt(this._libTotal||0)+' groups'),
       libBarShow:!uploadsEmpty||narrow,
-      hasCtx:ok&&S.view==='lib'&&!!fs&&!gatherNeed&&!uploadsEmpty&&ctxShow,
-      hasCtxHint:!!ctxHint, ctxHint:ctxHint||'',
       libQ:S.q, onLibQ:(e)=>this.setState({q:e.target.value, shown:160, gDepth:S.gather?Math.max(1,S.gDepth):S.gDepth}),
       libPh:narrow?'Search…':'Search name or page…  ( / )',
       gatherPh:narrow?'Search…':'Search within results…  ( / )',
