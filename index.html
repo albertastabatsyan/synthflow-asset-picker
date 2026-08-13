@@ -313,12 +313,7 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
             <div style="flex:1;min-width:8px"></div>
             <sc-if value="{{libFilters}}" hint-placeholder-val="{{ true }}">
               <input type="search" ref="{{libSearchRef}}" value="{{libQ}}" onChange="{{onLibQ}}" placeholder="{{libPh}}" aria-label="Search the library" style="width:190px;background:#2a2d31;border:1px solid rgba(232,232,234,.13);border-radius:4px;padding:7px 13px;font-size:12.5px;outline:none;min-height:{{ctlH}}px">
-              <div role="group" aria-label="Shape filter" style="display:flex;align-items:center;gap:1px">
-                <span aria-hidden="true" style="font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#6b6f76;margin-right:7px">SHAPE</span>
-                <sc-for list="{{shapeChips}}" as="sh" hint-placeholder-count="5">
-                  <button onClick="{{sh.go}}" aria-pressed="{{sh.on}}" data-tip="{{sh.tip}}" class="{{sh.hvc}}" style="border:0;background:{{sh.bg}};color:{{sh.fg}};border-radius:4px;padding:{{chipPad}};font-size:11px;font-weight:600;white-space:nowrap;min-height:{{chipH}}px;min-width:{{chipH}}px">{{sh.label}}</button>
-                </sc-for>
-              </div>
+              {{shapeSelectEl}}
             </sc-if>
             <sc-if value="{{isUploads}}" hint-placeholder-val="{{ false }}">
               <button onClick="{{uploadClick}}" class="hv-bright" style="background:oklch(0.55 0.17 262);border:1px solid oklch(0.55 0.17 262);color:#fff;border-radius:4px;padding:{{btnPad}};font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">↑ Add images</button>
@@ -2140,11 +2135,11 @@ class Component extends DCLogic {
       .map(x=>{ const done=x.total>0&&x.judged>=x.total;
         return {...x, hasPicks:x.judged>0, done, dotFg:done?'#b5ff90':'#8ab4ff',
           pct:String(x.judged), ct:this.fmt(x.total), curAria:x.cur?'true':'false'}; });
-    const shapeChips=[['','Any','All shapes'],['square','1:1','Roughly square'],['landscape','Wide','Wider than tall'],['portrait','Tall','Taller than wide'],['banner','Banner','Very wide strips']]
-      .map(([id,label,tip])=>({key:id||'any', label, tip, on:S.shape===id?'true':'false',
-        bg:S.shape===id?'#e4e7ec':'transparent', fg:S.shape===id?'#111214':'#8b8f96',
-        hvc:S.shape===id?'hv-bright':'hv-soft',
-        go:()=>this.setState({shape:id, shown:160})}));
+    // the shape filter is secondary chrome — one compact dropdown, the
+    // closed label always self-describing ("Shape: Wide")
+    const shapeSelectEl=this.sel(S.shape,(e)=>this.setState({shape:e.target.value, shown:160}),
+      [['','Shape: Any'],['square','Shape: 1:1'],['landscape','Shape: Wide'],['portrait','Shape: Tall'],['banner','Shape: Banner']],
+      'Filter by shape',150);
     const pickChips=[['un','Unpicked'],['picked','Picked'],['rejected','Rejected'],['','All']]
       .map(([id,label])=>{ const on=S.pickF===id;
         // the chips draw the journey: the queue drains rightward (→) into a
@@ -2371,7 +2366,7 @@ class Component extends DCLogic {
       libPh:narrow?'Search…':'Search name or page…  ( / )',
       gatherPh:narrow?'Search…':'Search within results…  ( / )',
       libFilters:!uploadsEmpty,
-      shapeChips, pickChips, isUploads:!!(fs&&fs.custom)&&!uploadsEmpty,
+      shapeSelectEl, pickChips, isUploads:!!(fs&&fs.custom)&&!uploadsEmpty,
       uploadClick:()=>{ if(this.fileEl) this.fileEl.click(); },
       onFiles:this.onFiles, fileRef:this.fileRef,
       stageDragOver:this.stageDragOver, stageDrop:this.stageDrop,
