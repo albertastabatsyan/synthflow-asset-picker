@@ -324,9 +324,6 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
         </sc-if>
         <sc-if value="{{hasCtx}}" hint-placeholder-val="{{ true }}">
           <div style="flex:none;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:7px 16px;border-bottom:1px solid rgba(232,232,234,.06);background:#111214">
-            <sc-if value="{{wide}}" hint-placeholder-val="{{ true }}">
-              <h1 style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;flex:none;margin:0">{{crumb}}</h1>
-            </sc-if>
             <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d;white-space:nowrap;flex:none">{{statLine}}</div>
             <sc-if value="{{hasCtxHint}}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;color:#80848d;min-width:0">{{ctxHint}}</div></sc-if>
           </div>
@@ -1975,7 +1972,7 @@ class Component extends DCLogic {
     const srcs=ok?this.sources():[];
     const fs=ok?this.fs():null;
     const gatherNeed=ok&&S.gather?this.need(S.gather):null;
-    let libSectionsRaw=[], gMoreDef=null, libStat=null, libEmptyHint=null, pickCounts=null, ctxHint=null;
+    let libSectionsRaw=[], gMoreDef=null, libStat=null, libEmptyHint=null, pickCounts=null, ctxHint=null, ctxShow=true;
     if(ok && S.view==='lib'){
       if(gatherNeed){ const gd=this.gatherData(gatherNeed);
         libSectionsRaw=gd.sections; this._libTotal=gd.total; gMoreDef=gd.more; }
@@ -1999,6 +1996,9 @@ class Component extends DCLogic {
             sub:'published — grouped by need on the Ready screen', items:rdy});
           this._libTotal=pickedAll.length;
           libStat=this.fmt(pickedAll.length)+' picked';
+          // the In Review / On Ready section headers say it all — one
+          // header layer, no strip above them
+          ctxShow=false;
           libEmptyHint='Nothing picked in this scope yet — picking happens in the Unpicked queue.';
         } else if(S.pickF==='rejected'){
           const rt=c=>S.rejects[c.qid].t||0;
@@ -2361,10 +2361,9 @@ class Component extends DCLogic {
         srcs.map((f,i)=>[String(i),f.short]),'Source',150),
       pageSelectEl:(fs&&!fs.all&&!fs.custom)?this.sel(S.page,(e)=>this.setState({page:e.target.value, shown:160}),
         [['','All pages'],...fs.pageOrder.map(p=>[p,p])],'Page',150):null,
-      crumb:fs?(fs.short+(S.page?(' — '+S.page):'')):'',
       statLine:libStat!==null?libStat:(this.fmt(this._libTotal||0)+' groups'),
       libBarShow:!uploadsEmpty||narrow,
-      hasCtx:ok&&S.view==='lib'&&!!fs&&!gatherNeed&&!uploadsEmpty,
+      hasCtx:ok&&S.view==='lib'&&!!fs&&!gatherNeed&&!uploadsEmpty&&ctxShow,
       hasCtxHint:!!ctxHint, ctxHint:ctxHint||'',
       libQ:S.q, onLibQ:(e)=>this.setState({q:e.target.value, shown:160, gDepth:S.gather?Math.max(1,S.gDepth):S.gDepth}),
       libPh:narrow?'Search…':'Search name or page…  ( / )',
