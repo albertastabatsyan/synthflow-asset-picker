@@ -353,6 +353,10 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
                 <h2 style="font-size:12.5px;font-weight:700;margin:0">{{ls.title}}</h2>
                 <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">{{ls.n}}</span>
                 <span style="font-size:11.5px;color:#80848d">{{ls.sub}}</span>
+                <span style="flex:1"></span>
+                <sc-if value="{{ls.hasGo}}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ls.go}}" class="hv-soft" style="border:0;background:transparent;border-radius:4px;color:#8ab4ff;font-size:12px;font-weight:600;padding:2px 8px;white-space:nowrap;cursor:pointer">{{ls.goLabel}}</button>
+                </sc-if>
               </div>
             </sc-if>
             <sc-for list="{{ls.rows}}" as="row" hint-placeholder-count="3">
@@ -1986,10 +1990,14 @@ class Component extends DCLogic {
           const pt=c=>S.picks[c.qid].t||0;
           const rev=pickedAll.filter(c=>S.picks[c.qid].status==='cand').sort((a,b)=>pt(b)-pt(a));
           const rdy=pickedAll.filter(c=>S.picks[c.qid].status==='ready').sort((a,b)=>pt(b)-pt(a));
+          // the journey continues on the Review / Ready screens — say so
+          // with the same blue text-link idiom Ready uses to point back
           if(rev.length) libSectionsRaw.push({title:'In Review',
-            sub:'candidates — publishing gives each a title and a need', items:rev});
+            sub:'candidates — publishing gives each a title and a need', items:rev,
+            goLabel:'Continue in Review ›', go:()=>this.setState({view:'rev', menu:false})});
           if(rdy.length) libSectionsRaw.push({title:'On Ready',
-            sub:'published — grouped by need on the Ready screen', items:rdy});
+            sub:'published — grouped by need on the Ready screen', items:rdy,
+            goLabel:'Open Ready ›', go:()=>this.setState({view:'ready', menu:false})});
           this._libTotal=pickedAll.length;
           libEmptyHint='Nothing picked in this scope yet — picking happens in the Unpicked queue.';
         } else if(S.pickF==='rejected'){
@@ -2093,7 +2101,8 @@ class Component extends DCLogic {
         rows.push({key:'r'+(ri++), tiles});
       }
       libSections.push({key:sec.title||'main', hasHead:!!sec.title, title:sec.title, sub:sec.sub,
-        n:sec.n||this.fmt(sec.items.length), rows});
+        n:sec.n||this.fmt(sec.items.length), rows,
+        hasGo:!!sec.go, goLabel:sec.goLabel||'', go:sec.go||null});
     }
     this._libQids=[];
     { let q2=S.shown;
