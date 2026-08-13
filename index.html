@@ -330,7 +330,7 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
           <span style="font-size:11.5px;color:#8b8f96">Picks go to Review, assigned to this need.</span>
           <span style="flex:1;min-width:8px"></span>
           <input type="search" ref="{{libSearchRef2}}" value="{{libQ}}" onChange="{{onLibQ}}" placeholder="{{gatherPh}}" aria-label="Search gather results" style="width:180px;background:#2a2d31;border:1px solid oklch(0.45 0.09 262);border-radius:4px;padding:6px 13px;font-size:12px;outline:none;min-height:{{ctlH}}px">
-          <button onClick="{{stopGather}}" class="hv-blue" style="border:1px solid oklch(0.45 0.09 262);background:transparent;color:#8ab4ff;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:700;min-height:{{ctlH}}px">✕ Done gathering</button>
+          <button onClick="{{stopGather}}" class="hv-blue" style="border:1px solid oklch(0.45 0.09 262);background:transparent;color:#8ab4ff;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:700;min-height:{{ctlH}}px">Done gathering</button>
         </div>
       </sc-if>
       <div ref="{{gridRef}}" onDragOver="{{stageDragOver}}" onDrop="{{stageDrop}}" style="flex:1;overflow-y:auto;min-height:0;padding:16px;position:relative;outline:none">
@@ -1831,7 +1831,6 @@ class Component extends DCLogic {
     const pchipH=narrow?46:28, pchipPad=narrow?'10px 15px':'5px 12px';
     const tabPad=narrow?'10px 16px':'5px 13px';
     const btnPad=narrow?'10px 14px':'6px 12px';
-    const chipPad=narrow?'9px 13px':'3px 9px';
     const pickPad=narrow?'8px 11px':'4px 9px';
     const pickH=narrow?44:24;
     const capH=narrow?56:38;
@@ -2205,7 +2204,7 @@ class Component extends DCLogic {
           lbPrimFig:isReady&&!c.custom, lbPrimDl:isReady&&c.custom,
           lbPrimPublish:!!isCand,
           lbPrimPick:!pk,
-          lbSecFig:!c.custom&&isCand, lbHasFig:!c.custom, lbFigHref:c.fig||'#',
+          lbSecFig:!c.custom&&!isReady, lbHasFig:!c.custom, lbFigHref:c.fig||'#',
           lbCanDropCand:!!isCand,
           lbCanRej:(!pk||!!isCand)&&!isRejLb, lbReject:(e)=>{e.stopPropagation(); this.reject(qid);},
           lbRejLabel:pk?'✕ Reject — removes it from Review':'✕ Reject — leaves the queue',
@@ -2312,7 +2311,7 @@ class Component extends DCLogic {
 
     return {
       rootRef:this.rootRef, wide:!narrow, narrow,
-      ctlH, chipH, navH, navPad, pchipH, pchipPad, tabPad, btnPad, chipPad, pickPad, pickH, capH,
+      ctlH, chipH, navH, navPad, pchipH, pchipPad, tabPad, btnPad, pickPad, pickH, capH,
       navTabs,
       syncDot, syncLabel, syncTitle,
       canSubmit:ok&&S.sync!=='live'&&queuedN>0, queuedN:String(queuedN), submitPicks:this.submitPicks,
