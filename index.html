@@ -13,6 +13,7 @@ window.__resources={
   'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js':'./react-dom.production.min.js'};
 </script>
 <script src="./support.js"></script>
+<script src="./local-filter.js"></script>
 <script>
 /* Boot watchdog: a blank page is never an acceptable failure mode. */
 (function(){
@@ -49,6 +50,17 @@ input::placeholder,textarea::placeholder{color:#6f737c}
 ::-webkit-scrollbar-thumb{background:rgba(232,232,234,.15);border-radius:4px;border:3px solid #111214;background-clip:padding-box}
 ::-webkit-scrollbar-track{background:transparent}
 input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid oklch(0.74 0.13 262);outline-offset:1px}
+/* One hover language for every control (inline styles carry the resting
+   look, so these need !important): soft = quiet veil for ghost/outline
+   buttons, line = border lift, bright = whole-button lift for solid or lit
+   controls, red/blue = the semantic tints, white = lightbox chrome. */
+button,select,a{transition:background-color .12s ease,border-color .12s ease,color .12s ease,filter .12s ease}
+.hv-soft:hover:not(:disabled){background-color:rgba(232,232,234,.07)!important}
+.hv-line:hover:not(:disabled){border-color:rgba(232,232,234,.38)!important}
+.hv-bright:hover:not(:disabled){filter:brightness(1.12)}
+.hv-red:hover:not(:disabled){background-color:rgba(234,74,75,.12)!important;border-color:rgba(234,74,75,.55)!important}
+.hv-blue:hover:not(:disabled){background-color:rgba(138,180,255,.1)!important;border-color:oklch(0.55 0.17 262)!important}
+.hv-white:hover:not(:disabled){background-color:rgba(255,255,255,.12)!important}
 </style>
 </helmet>
 <div ref="{{rootRef}}" style="height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:14px;line-height:1.45">
@@ -60,18 +72,18 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
     </div>
     <nav aria-label="Views" style="display:flex;background:rgba(232,232,234,.06);border:1px solid rgba(232,232,234,.1);border-radius:4px;padding:3px;gap:2px">
       <sc-for list="{{navTabs}}" as="t" hint-placeholder-count="3">
-        <button onClick="{{t.go}}" aria-current="{{t.cur}}" style="border:0;background:{{t.bg}};color:{{t.fg}};border-radius:4px;padding:{{tabPad}};font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;min-height:{{ctlH}}px">{{t.label}}<sc-if value="{{t.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:transparent;border:1px solid oklch(0.45 0.09 262);color:#8ab4ff;border-radius:4px;padding:1px 6px;font-weight:600">{{t.badge}}</span></sc-if></button>
+        <button onClick="{{t.go}}" aria-current="{{t.cur}}" class="{{t.hvc}}" style="border:0;background:{{t.bg}};color:{{t.fg}};border-radius:4px;padding:{{tabPad}};font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;min-height:{{ctlH}}px">{{t.label}}<sc-if value="{{t.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:transparent;border:1px solid oklch(0.45 0.09 262);color:#8ab4ff;border-radius:4px;padding:1px 6px;font-weight:600">{{t.badge}}</span></sc-if></button>
       </sc-for>
     </nav>
     <div style="flex:1;min-width:8px"></div>
-    <div title="{{syncTitle}}" tabIndex="0" role="note" aria-label="{{syncTitle}}" style="display:flex;align-items:center;gap:7px;border:1px solid rgba(232,232,234,.18);background:rgba(232,232,234,.05);border-radius:4px;padding:5px 12px;min-height:30px">
+    <div data-tip="{{syncTitle}}" tabIndex="0" role="note" aria-label="{{syncTitle}}" style="display:flex;align-items:center;gap:7px;border:1px solid rgba(232,232,234,.18);background:rgba(232,232,234,.05);border-radius:4px;padding:5px 12px;min-height:30px">
       <span style="width:8px;height:8px;border-radius:50%;background:{{syncDot}};flex:none"></span>
       <span style="font-size:11.5px;font-weight:600;color:#8b8f96;white-space:nowrap">{{syncLabel}}</span>
     </div>
     <sc-if value="{{canSubmit}}" hint-placeholder-val="{{ false }}">
-      <button onClick="{{submitPicks}}" style="border:0;background:oklch(0.55 0.17 262);color:#fff;border-radius:4px;padding:{{tabPad}};font-size:12px;font-weight:700;white-space:nowrap;min-height:{{ctlH}}px">{{submitLabel}}</button>
+      <button onClick="{{submitPicks}}" class="hv-bright" style="border:0;background:oklch(0.55 0.17 262);color:#fff;border-radius:4px;padding:{{tabPad}};font-size:12px;font-weight:700;white-space:nowrap;min-height:{{ctlH}}px">{{submitLabel}}</button>
     </sc-if>
-    <button onClick="{{toggleHelp}}" aria-label="How it works and what is shared" style="width:{{ctlH}}px;height:{{ctlH}}px;border-radius:50%;border:1px solid rgba(232,232,234,.15);background:transparent;color:#8b8f96;font-size:13px;font-weight:600">?</button>
+    <button onClick="{{toggleHelp}}" aria-label="How it works and what is shared" data-tip="How it works and what is shared" class="hv-soft hv-line" style="width:{{ctlH}}px;height:{{ctlH}}px;border-radius:50%;border:1px solid rgba(232,232,234,.15);background:transparent;color:#8b8f96;font-size:13px;font-weight:600">?</button>
   </header>
 
   <sc-if value="{{loadErr}}" hint-placeholder-val="{{ false }}">
@@ -79,7 +91,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
       <div style="background:#1e2125;border:1px solid rgba(232,232,234,.18);border-radius:4px;padding:26px 28px;max-width:440px;text-align:center">
         <div style="font-size:15px;font-weight:700;margin-bottom:6px">Couldn't load the source libraries</div>
         <div style="font-size:12.5px;color:#8b8f96;margin-bottom:16px">The two Figma library indexes didn't load. Check your connection — nothing was lost.</div>
-        <button onClick="{{retryLoad}}" style="background:oklch(0.55 0.17 262);border:0;color:#fff;border-radius:4px;padding:10px 22px;font-size:13px;font-weight:700;min-height:44px">Retry</button>
+        <button onClick="{{retryLoad}}" class="hv-bright" style="background:oklch(0.55 0.17 262);border:0;color:#fff;border-radius:4px;padding:10px 22px;font-size:13px;font-weight:700;min-height:44px">Retry</button>
       </div>
     </div>
   </sc-if>
@@ -96,7 +108,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <div style="flex:none;font-size:11px;font-weight:700;letter-spacing:.09em;color:#80848d;padding:14px 18px 6px">NEEDS</div>
         <div style="flex:1;overflow-y:auto;padding:0 10px 10px;min-height:0">
           <sc-for list="{{needRows}}" as="nr" hint-placeholder-count="8">
-            <button onClick="{{nr.go}}" aria-current="{{nr.cur}}" title="{{nr.tip}}" style="display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:{{nr.bg}};border-radius:4px;padding:6px 9px;margin-bottom:1px;cursor:pointer;min-height:30px">
+            <button onClick="{{nr.go}}" aria-current="{{nr.cur}}" data-tip="{{nr.tip}}" class="{{nr.hvc}}" style="display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:{{nr.bg}};border-radius:4px;padding:6px 9px;margin-bottom:1px;cursor:pointer;min-height:30px">
               <span aria-hidden="true" style="width:7px;height:7px;border-radius:50%;background:{{nr.dot}};flex:none"></span>
               <span style="flex:1;font-size:12.5px;font-weight:{{nr.wt}};color:{{nr.fg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{nr.label}}</span>
               <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{nr.ctFg}}">{{nr.ct}}</span>
@@ -104,7 +116,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           </sc-for>
         </div>
         <div style="flex:none;padding:10px;border-top:1px solid rgba(232,232,234,.08)">
-          <button onClick="{{newNeed}}" style="width:100%;border:1px dashed rgba(232,232,234,.26);background:transparent;border-radius:4px;padding:8px;font-size:12px;color:#8b8f96">＋ New need</button>
+          <button onClick="{{newNeed}}" class="hv-soft hv-line" style="width:100%;border:1px dashed rgba(232,232,234,.26);background:transparent;border-radius:4px;padding:8px;font-size:12px;color:#8b8f96">＋ New need</button>
         </div>
       </nav>
     </sc-if>
@@ -115,7 +127,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">{{readySub}}</div>
         </div>
         <div style="flex:1;min-width:8px"></div>
-        <sc-if value="{{narrow}}" hint-placeholder-val="{{ false }}">{{needSelectEl}}<button onClick="{{newNeed}}" style="border:1px dashed rgba(232,232,234,.3);background:transparent;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#8b8f96;min-height:{{ctlH}}px;white-space:nowrap">＋ Need</button></sc-if>
+        <sc-if value="{{narrow}}" hint-placeholder-val="{{ false }}">{{needSelectEl}}<button onClick="{{newNeed}}" class="hv-soft hv-line" style="border:1px dashed rgba(232,232,234,.3);background:transparent;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#8b8f96;min-height:{{ctlH}}px;white-space:nowrap">＋ Need</button></sc-if>
         <input type="search" ref="{{readySearchRef}}" value="{{readyQ}}" onChange="{{onReadyQ}}" placeholder="{{readyPh}}" aria-label="Search ready assets" style="width:200px;background:#2a2d31;border:1px solid rgba(232,232,234,.13);border-radius:4px;padding:7px 14px;font-size:12.5px;outline:none;min-height:{{ctlH}}px">
       </div>
       <sc-if value="{{needHead}}" hint-placeholder-val="{{ false }}">
@@ -127,8 +139,8 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
             <span style="font-size:12px;color:#8b8f96;max-width:520px">{{needHeadNote}}</span>
           </sc-if>
           <span style="flex:1;min-width:8px"></span>
-          <sc-if value="{{needHeadCanGather}}" hint-placeholder-val="{{ true }}"><button onClick="{{needHeadGather}}" style="border:1px solid oklch(0.45 0.09 262);background:oklch(0.26 0.04 262);border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#8ab4ff;min-height:{{ctlH}}px">⌕ Gather from source</button></sc-if>
-          <button onClick="{{menuToggle}}" aria-label="More actions for this need" aria-expanded="{{menuAria}}" style="border:1px solid rgba(232,232,234,.13);background:transparent;border-radius:4px;padding:{{btnPad}};font-size:14px;color:#c2c5cb;min-height:{{ctlH}}px;min-width:{{ctlH}}px">⋯</button>
+          <sc-if value="{{needHeadCanGather}}" hint-placeholder-val="{{ true }}"><button onClick="{{needHeadGather}}" class="hv-bright" data-tip="Shortlist matching source assets for this need" style="border:1px solid oklch(0.45 0.09 262);background:oklch(0.26 0.04 262);border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#8ab4ff;min-height:{{ctlH}}px">⌕ Gather from source</button></sc-if>
+          <button onClick="{{menuToggle}}" aria-label="More actions for this need" aria-expanded="{{menuAria}}" data-tip="More actions for this need" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.13);background:transparent;border-radius:4px;padding:{{btnPad}};font-size:14px;color:#c2c5cb;min-height:{{ctlH}}px;min-width:{{ctlH}}px">⋯</button>
         </div>
       </sc-if>
       <div style="flex:1;overflow-y:auto;min-height:0;padding:16px 18px">
@@ -153,17 +165,17 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
               </div>
             </sc-if>
             <sc-if value="{{sec.hasCands}}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{sec.toRev}}" style="border:0;background:transparent;padding:0 0 10px;font-size:12px;font-weight:600;color:#8ab4ff;cursor:pointer;min-height:{{ctlH}}px">{{sec.candLine}} ›</button>
+              <button onClick="{{sec.toRev}}" class="hv-soft" style="border:0;background:transparent;border-radius:4px;padding:0 0 10px;font-size:12px;font-weight:600;color:#8ab4ff;cursor:pointer;min-height:{{ctlH}}px">{{sec.candLine}} ›</button>
             </sc-if>
             <sc-if value="{{sec.missing}}" hint-placeholder-val="{{ false }}">
               <div style="border:1px solid rgba(255,209,102,.4);background:rgba(255,209,102,.14);border-radius:4px;padding:9px 13px;font-size:12px;color:#ffd166;margin-bottom:12px">⚠ {{sec.missingTxt}}
-                <sc-if value="{{sec.missingGatherShow}}" hint-placeholder-val="{{ false }}"><button onClick="{{sec.gather}}" style="border:0;background:transparent;color:#ffd166;font-weight:700;font-size:12px;text-decoration:underline;padding:6px 10px;min-height:{{ctlH}}px">Gather for it</button></sc-if>
+                <sc-if value="{{sec.missingGatherShow}}" hint-placeholder-val="{{ false }}"><button onClick="{{sec.gather}}" class="hv-soft" style="border:0;background:transparent;border-radius:4px;color:#ffd166;font-weight:700;font-size:12px;text-decoration:underline;padding:6px 10px;min-height:{{ctlH}}px">Gather for it</button></sc-if>
               </div>
             </sc-if>
             <sc-if value="{{sec.empty}}" hint-placeholder-val="{{ false }}">
               <div style="border:1.5px dashed rgba(232,232,234,.17);border-radius:4px;padding:26px;text-align:center;color:#8b8f96;font-size:12.5px">
                 Nothing published yet for this need.
-                <div style="margin-top:10px"><button onClick="{{sec.gather}}" style="border:0;background:oklch(0.55 0.17 262);color:#fff;border-radius:4px;padding:9px 16px;font-size:12.5px;font-weight:600;min-height:44px">⌕ Gather candidates from source</button></div>
+                <div style="margin-top:10px"><button onClick="{{sec.gather}}" class="hv-bright" style="border:0;background:oklch(0.55 0.17 262);color:#fff;border-radius:4px;padding:9px 16px;font-size:12.5px;font-weight:600;min-height:44px">⌕ Gather candidates from source</button></div>
               </div>
             </sc-if>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:12px">
@@ -180,13 +192,13 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
                     <span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12.5px;font-weight:600;line-height:1.35">{{c.name}}</span>
                     <span style="display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:6px">
                       <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:11px;color:{{c.metaFg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{c.meta}}</span>
-                      <sc-if value="{{c.hasNote}}" hint-placeholder-val="{{ false }}"><span title="{{c.note}}" aria-label="Usage note: {{c.note}}" tabIndex="0" style="flex:none;color:#ffd166;font-size:11px">ⓘ</span></sc-if>
-                      <sc-if value="{{c.hasFig}}" hint-placeholder-val="{{ false }}"><button onClick="{{c.copy}}" aria-label="{{c.copyAria}}" style="flex:none;border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;color:#c2c5cb;padding:{{btnPad}};font-size:11px;font-weight:600;min-height:{{ctlH}}px">Copy</button></sc-if>
+                      <sc-if value="{{c.hasNote}}" hint-placeholder-val="{{ false }}"><span data-tip="{{c.note}}" aria-label="Usage note: {{c.note}}" tabIndex="0" style="flex:none;color:#ffd166;font-size:11px">ⓘ</span></sc-if>
+                      <sc-if value="{{c.hasFig}}" hint-placeholder-val="{{ false }}"><button onClick="{{c.copy}}" aria-label="{{c.copyAria}}" data-tip="Copy the title + Figma link" class="hv-soft hv-line" style="flex:none;border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;color:#c2c5cb;padding:{{btnPad}};font-size:11px;font-weight:600;min-height:{{ctlH}}px">Copy</button></sc-if>
                       <sc-if value="{{c.hasFig}}" hint-placeholder-val="{{ true }}">
-                        <a href="{{c.fig}}" target="_blank" rel="noopener" aria-label="{{c.figAria}}" style="flex:none;border-radius:4px;border:1px solid oklch(0.45 0.09 262);background:transparent;color:#8ab4ff;display:flex;align-items:center;padding:{{btnPad}};font-size:11.5px;font-weight:600;text-decoration:none;min-height:{{ctlH}}px">Figma ↗</a>
+                        <a href="{{c.fig}}" target="_blank" rel="noopener" aria-label="{{c.figAria}}" class="hv-blue" style="flex:none;border-radius:4px;border:1px solid oklch(0.45 0.09 262);background:transparent;color:#8ab4ff;display:flex;align-items:center;padding:{{btnPad}};font-size:11.5px;font-weight:600;text-decoration:none;min-height:{{ctlH}}px">Figma ↗</a>
                       </sc-if>
                       <sc-if value="{{c.local}}" hint-placeholder-val="{{ false }}">
-                        <button onClick="{{c.dl}}" aria-label="{{c.dlAria}}" style="flex:none;border:1px solid oklch(0.45 0.09 262);border-radius:4px;background:transparent;color:#8ab4ff;display:flex;align-items:center;padding:{{btnPad}};font-size:11.5px;font-weight:600;min-height:{{ctlH}}px">↓ Save</button>
+                        <button onClick="{{c.dl}}" aria-label="{{c.dlAria}}" class="hv-blue" style="flex:none;border:1px solid oklch(0.45 0.09 262);border-radius:4px;background:transparent;color:#8ab4ff;display:flex;align-items:center;padding:{{btnPad}};font-size:11.5px;font-weight:600;min-height:{{ctlH}}px">Save ↓</button>
                       </sc-if>
                     </span>
                   </div>
@@ -210,7 +222,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
       <div style="flex:1;min-width:8px"></div>
     </div>
     <sc-if value="{{staleShow}}" hint-placeholder-val="{{ false }}">
-      <div style="flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:7px 16px;background:rgba(255,209,102,.14);border-bottom:1px solid rgba(255,209,102,.4);font-size:11.5px;color:#ffd166"><span style="flex:1;min-width:200px">{{staleTxt}}</span><button onClick="{{staleReload}}" style="border:1px solid rgba(255,209,102,.4);background:transparent;color:#ffd166;border-radius:4px;padding:6px 12px;font-size:11.5px;font-weight:700;min-height:{{ctlH}}px">↻ Reload sources</button><button onClick="{{staleDismiss}}" style="border:0;background:transparent;color:#ffd166;font-size:11.5px;font-weight:600;text-decoration:underline;padding:6px 8px;min-height:{{ctlH}}px">Hide</button></div>
+      <div style="flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:7px 16px;background:rgba(255,209,102,.14);border-bottom:1px solid rgba(255,209,102,.4);font-size:11.5px;color:#ffd166"><span style="flex:1;min-width:200px">{{staleTxt}}</span><button onClick="{{staleReload}}" class="hv-soft" style="border:1px solid rgba(255,209,102,.4);background:transparent;color:#ffd166;border-radius:4px;padding:6px 12px;font-size:11.5px;font-weight:700;min-height:{{ctlH}}px">↻ Reload sources</button><button onClick="{{staleDismiss}}" class="hv-soft" style="border:0;background:transparent;border-radius:4px;color:#ffd166;font-size:11.5px;font-weight:600;text-decoration:underline;padding:6px 8px;min-height:{{ctlH}}px">Hide</button></div>
     </sc-if>
     <div style="flex:1;overflow-y:auto;min-height:0;padding:14px 16px">
       <sc-if value="{{revEmpty}}" hint-placeholder-val="{{ false }}">
@@ -227,7 +239,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           </div>
           <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
             <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;background:#1e2125;border:1px solid rgba(232,232,234,.18);border-radius:4px;padding:9px 12px;margin-bottom:7px" style-hover="border-color:rgba(232,232,234,.3);background:#24211d">
-              <button onClick="{{r.open}}" aria-label="{{r.zoomAria}}" style="flex:none;width:92px;height:58px;border-radius:4px;overflow:hidden;border:1px solid rgba(232,232,234,.18);background:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);padding:0;cursor:zoom-in">
+              <button onClick="{{r.open}}" aria-label="{{r.zoomAria}}" style="flex:none;width:92px;height:58px;border-radius:4px;overflow:hidden;border:1px solid rgba(232,232,234,.18);background:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);padding:0;cursor:zoom-in" style-hover="border-color:rgba(232,232,234,.4)">
                 <img src="{{r.img}}" alt="" loading="lazy" onError="{{imgErr}}" style="width:100%;height:100%;object-fit:cover;display:block">
               </button>
               <div style="flex:1;min-width:150px">
@@ -236,9 +248,9 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
                 <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{r.fitFg}}">{{r.fitLine}}</div>
               </div>
               {{r.needSel}}
-              <sc-if value="{{r.hasFig}}" hint-placeholder-val="{{ false }}"><a href="{{r.fig}}" target="_blank" rel="noopener" aria-label="{{r.figAria}}" style="border:1px solid rgba(232,232,234,.16);background:transparent;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#c2c5cb;text-decoration:none;white-space:nowrap;min-height:{{ctlH}}px;display:flex;align-items:center">Figma ↗</a></sc-if>
-              <button onClick="{{r.publish}}" aria-label="{{r.pubAria}}" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#fff;white-space:nowrap;min-height:{{ctlH}}px">Publish…</button>
-              <button onClick="{{r.remove}}" aria-label="{{r.removeAria}}" title="Remove from Review" style="border:1px solid rgba(232,232,234,.13);background:transparent;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#ea4a4b;white-space:nowrap;min-height:{{ctlH}}px;min-width:{{ctlH}}px">✕</button>
+              <sc-if value="{{r.hasFig}}" hint-placeholder-val="{{ false }}"><a href="{{r.fig}}" target="_blank" rel="noopener" aria-label="{{r.figAria}}" class="hv-blue" style="border:1px solid oklch(0.45 0.09 262);background:transparent;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#8ab4ff;text-decoration:none;white-space:nowrap;min-height:{{ctlH}}px;display:flex;align-items:center">Figma ↗</a></sc-if>
+              <button onClick="{{r.publish}}" aria-label="{{r.pubAria}}" class="hv-bright" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:600;color:#fff;white-space:nowrap;min-height:{{ctlH}}px">Publish…</button>
+              <button onClick="{{r.remove}}" aria-label="{{r.removeAria}}" data-tip="Back to the queue — removes it from Review" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.16);background:transparent;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:700;color:#8b8f96;white-space:nowrap;min-height:{{ctlH}}px;min-width:{{ctlH}}px">↩</button>
             </div>
           </sc-for>
         </section>
@@ -254,7 +266,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <div style="flex:none;padding:12px 10px 8px;display:flex;flex-direction:column;gap:2px">
           <div style="font-size:11px;font-weight:700;letter-spacing:.09em;color:#80848d;padding:0 8px 6px">SOURCES</div>
           <sc-for list="{{libRows}}" as="lr" hint-placeholder-count="4">
-            <button onClick="{{lr.go}}" aria-current="{{lr.curAria}}" style="display:flex;align-items:center;gap:9px;border:0;background:transparent;border-radius:4px;padding:7px 8px;text-align:left;width:100%;cursor:pointer;min-height:32px">
+            <button onClick="{{lr.go}}" aria-current="{{lr.curAria}}" class="hv-soft" style="display:flex;align-items:center;gap:9px;border:0;background:transparent;border-radius:4px;padding:7px 8px;text-align:left;width:100%;cursor:pointer;min-height:32px">
               <span style="width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(232,232,234,.26);flex:none;display:flex;align-items:center;justify-content:center"><sc-if value="{{lr.cur}}" hint-placeholder-val="{{ false }}"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.55 0.17 262)"></span></sc-if></span>
               <span style="flex:1;font-size:12.5px;font-weight:600;color:#e8e8ea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{lr.short}}</span>
               <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#80848d">{{lr.count}}</span>
@@ -294,18 +306,20 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <sc-if value="{{libFilters}}" hint-placeholder-val="{{ true }}">
             <input type="search" ref="{{libSearchRef}}" value="{{libQ}}" onChange="{{onLibQ}}" placeholder="{{libPh}}" aria-label="Search the library" style="width:190px;background:#2a2d31;border:1px solid rgba(232,232,234,.13);border-radius:4px;padding:7px 13px;font-size:12.5px;outline:none;min-height:{{ctlH}}px">
             <div role="group" aria-label="Pick state filter" style="display:flex;background:rgba(232,232,234,.06);border:1px solid rgba(232,232,234,.1);border-radius:4px;padding:2px;gap:1px">
-              <sc-for list="{{pickChips}}" as="pc" hint-placeholder-count="3">
-                <button onClick="{{pc.go}}" aria-pressed="{{pc.on}}" style="border:0;background:{{pc.bg}};color:{{pc.fg}};border-radius:4px;padding:{{chipPad}};font-size:11px;font-weight:600;white-space:nowrap;min-height:{{chipH}}px">{{pc.label}}</button>
+              <sc-for list="{{pickChips}}" as="pc" hint-placeholder-count="4">
+                <sc-if value="{{pc.arrow}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="flex:none;align-self:center;color:#565a61;font-size:11px;padding:0 2px">→</span></sc-if>
+                <sc-if value="{{pc.sep}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width:1px;flex:none;align-self:stretch;background:rgba(232,232,234,.18);margin:3px 4px"></span></sc-if>
+                <button onClick="{{pc.go}}" aria-pressed="{{pc.on}}" data-tip="{{pc.tip}}" class="{{pc.hvc}}" style="border:0;background:{{pc.bg}};color:{{pc.fg}};border-radius:4px;padding:{{chipPad}};font-size:11px;font-weight:600;white-space:nowrap;min-height:{{chipH}}px;display:inline-flex;align-items:center;gap:5px"><sc-if value="{{pc.hasDot}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width:5px;height:5px;border-radius:50%;background:{{pc.dot}};flex:none"></span></sc-if>{{pc.label}}<sc-if value="{{pc.hasCt}}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:{{pc.ctFg}}">{{pc.ct}}</span></sc-if></button>
               </sc-for>
             </div>
             <div role="group" aria-label="Shape filter" style="display:flex;background:rgba(232,232,234,.06);border:1px solid rgba(232,232,234,.1);border-radius:4px;padding:2px;gap:1px">
               <sc-for list="{{shapeChips}}" as="sh" hint-placeholder-count="5">
-                <button onClick="{{sh.go}}" aria-pressed="{{sh.on}}" style="border:0;background:{{sh.bg}};color:{{sh.fg}};border-radius:4px;padding:{{chipPad}};font-size:11px;font-weight:600;white-space:nowrap;min-height:{{chipH}}px;min-width:{{chipH}}px">{{sh.label}}</button>
+                <button onClick="{{sh.go}}" aria-pressed="{{sh.on}}" data-tip="{{sh.tip}}" class="{{sh.hvc}}" style="border:0;background:{{sh.bg}};color:{{sh.fg}};border-radius:4px;padding:{{chipPad}};font-size:11px;font-weight:600;white-space:nowrap;min-height:{{chipH}}px;min-width:{{chipH}}px">{{sh.label}}</button>
               </sc-for>
             </div>
           </sc-if>
           <sc-if value="{{isUploads}}" hint-placeholder-val="{{ false }}">
-            <button onClick="{{uploadClick}}" style="background:oklch(0.55 0.17 262);border:1px solid oklch(0.55 0.17 262);color:#fff;border-radius:4px;padding:{{btnPad}};font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">↑ Add images</button>
+            <button onClick="{{uploadClick}}" class="hv-bright" style="background:oklch(0.55 0.17 262);border:1px solid oklch(0.55 0.17 262);color:#fff;border-radius:4px;padding:{{btnPad}};font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">↑ Add images</button>
           </sc-if>
         </div>
       </sc-if>
@@ -318,7 +332,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <span style="font-size:11.5px;color:#8b8f96">Picks go to Review, assigned to this need.</span>
           <span style="flex:1;min-width:8px"></span>
           <input type="search" ref="{{libSearchRef2}}" value="{{libQ}}" onChange="{{onLibQ}}" placeholder="{{gatherPh}}" aria-label="Search gather results" style="width:180px;background:#2a2d31;border:1px solid oklch(0.45 0.09 262);border-radius:4px;padding:6px 13px;font-size:12px;outline:none;min-height:{{ctlH}}px">
-          <button onClick="{{stopGather}}" style="border:1px solid oklch(0.45 0.09 262);background:transparent;color:#8ab4ff;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:700;min-height:{{ctlH}}px">✕ Done gathering</button>
+          <button onClick="{{stopGather}}" class="hv-blue" style="border:1px solid oklch(0.45 0.09 262);background:transparent;color:#8ab4ff;border-radius:4px;padding:{{btnPad}};font-size:12px;font-weight:700;min-height:{{ctlH}}px">✕ Done gathering</button>
         </div>
       </sc-if>
       <div ref="{{gridRef}}" onDragOver="{{stageDragOver}}" onDrop="{{stageDrop}}" style="flex:1;overflow-y:auto;min-height:0;padding:16px;position:relative;outline:none">
@@ -326,7 +340,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <div style="border:1.5px dashed rgba(232,232,234,.22);border-radius:4px;padding:56px 24px;text-align:center;color:#8b8f96;font-size:13px;max-width:540px;margin:40px auto">
             <div style="font-size:15px;font-weight:600;color:#e8e8ea;margin-bottom:6px">Bring in pieces that live outside Figma</div>
             {{uploadsEmptyHint}}
-            <div style="margin-top:14px"><button onClick="{{uploadClick}}" style="background:oklch(0.55 0.17 262);border:0;color:#fff;border-radius:4px;padding:10px 18px;font-size:12.5px;font-weight:600;min-height:44px">↑ Add images</button></div>
+            <div style="margin-top:14px"><button onClick="{{uploadClick}}" class="hv-bright" style="background:oklch(0.55 0.17 262);border:0;color:#fff;border-radius:4px;padding:10px 18px;font-size:12.5px;font-weight:600;min-height:44px">↑ Add images</button></div>
           </div>
         </sc-if>
         <sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}">
@@ -367,9 +381,12 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
                         <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{it.subFg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.sub}}</div>
                       </div>
                       <sc-if value="{{it.hasRej}}" hint-placeholder-val="{{ false }}">
-                        <button onClick="{{it.rej}}" aria-label="{{it.rejAria}}" style="flex:none;border:1px solid rgba(232,232,234,.16);border-radius:4px;padding:{{pickPad}};font-size:11px;font-weight:700;background:transparent;color:#8b8f96;white-space:nowrap;min-height:{{pickH}}px" style-hover="color:#ea4a4b;border-color:rgba(234,74,75,.55)">✕</button>
+                        <button onClick="{{it.rej}}" aria-label="{{it.rejAria}}" data-tip="{{it.rejAria}}" style="flex:none;border:1px solid rgba(232,232,234,.16);border-radius:4px;padding:{{pickPad}};font-size:11px;font-weight:700;background:transparent;color:#8b8f96;white-space:nowrap;min-height:{{pickH}}px" style-hover="color:#ea4a4b;border-color:rgba(234,74,75,.55);background:rgba(234,74,75,.08)">✕</button>
                       </sc-if>
-                      <button onClick="{{it.act}}" aria-label="{{it.actAria}}" style="flex:none;border:1px solid {{it.actLine}};border-radius:4px;padding:{{pickPad}};font-size:11px;font-weight:700;background:{{it.actBg}};color:{{it.actFg}};white-space:nowrap;min-height:{{pickH}}px">{{it.actLabel}}</button>
+                      <sc-if value="{{it.hasRestore}}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{it.restore}}" aria-label="{{it.restoreAria}}" data-tip="{{it.restoreAria}}" style="flex:none;border:1px solid rgba(232,232,234,.16);border-radius:4px;padding:{{pickPad}};font-size:11px;font-weight:700;background:transparent;color:#8b8f96;white-space:nowrap;min-height:{{pickH}}px" style-hover="color:#e8e8ea;border-color:rgba(232,232,234,.45);background:rgba(232,232,234,.07)">↩</button>
+                      </sc-if>
+                      <button onClick="{{it.act}}" aria-label="{{it.actAria}}" data-tip="{{it.actAria}}" class="hv-soft" style="flex:none;border:1px solid {{it.actLine}};border-radius:4px;padding:{{pickPad}};font-size:11px;font-weight:700;background:{{it.actBg}};color:{{it.actFg}};white-space:nowrap;min-height:{{pickH}}px">{{it.actLabel}}</button>
                     </div>
                   </div>
                 </sc-for>
@@ -379,7 +396,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         </sc-for>
         <sc-if value="{{gMore}}" hint-placeholder-val="{{ false }}">
           <div style="padding:6px 0 18px;text-align:center">
-            <button onClick="{{gMoreGo}}" style="border:1px solid oklch(0.45 0.09 262);background:oklch(0.26 0.04 262);color:#8ab4ff;border-radius:4px;padding:9px 20px;font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">{{gMoreLabel}}</button>
+            <button onClick="{{gMoreGo}}" class="hv-bright" style="border:1px solid oklch(0.45 0.09 262);background:oklch(0.26 0.04 262);color:#8ab4ff;border-radius:4px;padding:9px 20px;font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">{{gMoreLabel}}</button>
           </div>
         </sc-if>
         <div ref="{{sentinelRef}}" style="height:2px"></div>
@@ -414,13 +431,13 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.65)">{{lbCounter}}</span>
         <span style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{lbName}}</span>
         <span style="flex:1"></span>
-        <button ref="{{lbCloseRef}}" onClick="{{lbClose}}" aria-label="Close" style="border:0;background:transparent;border-radius:4px;color:rgba(255,255,255,.85);font-size:16px;padding:8px 12px;min-height:44px;min-width:44px">✕</button>
+        <button ref="{{lbCloseRef}}" onClick="{{lbClose}}" aria-label="Close" data-tip="Close (esc)" class="hv-white" style="border:0;background:transparent;border-radius:4px;color:rgba(255,255,255,.85);font-size:16px;padding:8px 12px;min-height:44px;min-width:44px">✕</button>
       </div>
       <div style="flex:1;min-height:0;display:flex;flex-direction:{{lbDir}};gap:12px;padding:0 16px;overflow-y:auto">
         <div onClick="{{lbClose}}" style="flex:1;min-height:200px;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px">
-          <button onClick="{{lbPrev}}" aria-label="Previous asset" style="flex:none;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-size:16px">‹</button>
+          <button onClick="{{lbPrev}}" aria-label="Previous asset" data-tip="Previous (←)" class="hv-white" style="flex:none;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-size:16px">‹</button>
           {{lbImgEl}}
-          <button onClick="{{lbNext}}" aria-label="Next asset" style="flex:none;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-size:16px">›</button>
+          <button onClick="{{lbNext}}" aria-label="Next asset" data-tip="Next (→)" class="hv-white" style="flex:none;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-size:16px">›</button>
         </div>
         <div onClick="{{stopEv}}" style="flex:none;width:{{lbPanelW}};background:#232529;border-radius:4px;padding:16px 18px;align-self:{{lbPanelAlign}};max-height:100%;overflow-y:auto">
           <div style="display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:4px 10px;background:transparent;border:1px solid {{lbStatusLine}};color:{{lbStatusFg}};margin-bottom:8px">{{lbStatus}}</div>
@@ -441,45 +458,45 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           </sc-if>
           <div style="display:flex;flex-direction:column;gap:6px">
             <sc-if value="{{lbPrimFig}}" hint-placeholder-val="{{ false }}">
-              <a href="{{lbFigHref}}" target="_blank" rel="noopener" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:11px 12px;font-size:13px;font-weight:700;color:#fff;text-align:center;text-decoration:none;display:block">Open in Figma ↗</a>
+              <a href="{{lbFigHref}}" target="_blank" rel="noopener" class="hv-bright" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:11px 12px;font-size:13px;font-weight:700;color:#fff;text-align:center;text-decoration:none;display:block">Open in Figma ↗</a>
             </sc-if>
             <sc-if value="{{lbPrimDl}}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{lbDl}}" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:11px 12px;font-size:13px;font-weight:700;color:#fff;text-align:center">Download image</button>
+              <button onClick="{{lbDl}}" class="hv-bright" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:11px 12px;font-size:13px;font-weight:700;color:#fff;text-align:center">Download image</button>
             </sc-if>
             <sc-if value="{{lbPrimPublish}}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{lbPublish}}" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:11px 12px;font-size:13px;font-weight:700;color:#fff;text-align:center">Publish to Ready…</button>
+              <button onClick="{{lbPublish}}" class="hv-bright" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:11px 12px;font-size:13px;font-weight:700;color:#fff;text-align:center">Publish to Ready…</button>
             </sc-if>
             <sc-if value="{{lbPrimPick}}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{lbPick}}" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:11px 12px;font-size:13px;font-weight:700;color:#fff;text-align:center">＋ Pick for review</button>
+              <button onClick="{{lbPick}}" class="hv-bright" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:11px 12px;font-size:13px;font-weight:700;color:#fff;text-align:center">＋ Pick for review</button>
             </sc-if>
             <sc-if value="{{lbSecFig}}" hint-placeholder-val="{{ false }}">
-              <a href="{{lbFigHref}}" target="_blank" rel="noopener" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;text-decoration:none;display:block;color:#e8e8ea;text-align:center">Open in Figma ↗</a>
+              <a href="{{lbFigHref}}" target="_blank" rel="noopener" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;text-decoration:none;display:block;color:#e8e8ea;text-align:center">Open in Figma ↗</a>
             </sc-if>
             <sc-if value="{{lbCanRestore}}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{lbRestore}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#e8e8ea;text-align:center;min-height:{{ctlH}}px">↩ Restore to the queue</button>
+              <button onClick="{{lbRestore}}" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#e8e8ea;text-align:center;min-height:{{ctlH}}px">↩ Restore to the queue</button>
             </sc-if>
             <sc-if value="{{lbCanRej}}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{lbReject}}" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:center;min-height:{{ctlH}}px">{{lbRejLabel}}</button>
+              <button onClick="{{lbReject}}" class="hv-red" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:center;min-height:{{ctlH}}px">{{lbRejLabel}}</button>
             </sc-if>
             <sc-if value="{{lbCanDropCand}}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{lbDropCand}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:left;min-height:{{ctlH}}px">Remove from Review</button>
+              <button onClick="{{lbDropCand}}" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#e8e8ea;text-align:center;min-height:{{ctlH}}px">↩ Remove from Review — back to the queue</button>
             </sc-if>
             <sc-if value="{{lbCanLibRm}}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{lbLibRm}}" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:left;min-height:{{ctlH}}px">Remove from team library…</button>
+              <button onClick="{{lbLibRm}}" class="hv-red" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:left;min-height:{{ctlH}}px">Remove from team library…</button>
             </sc-if>
             <sc-if value="{{lbHasFig}}" hint-placeholder-val="{{ true }}">
               <div style="display:flex;gap:6px">
-                <button onClick="{{lbDlQuiet}}" style="flex:1;border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 10px;font-size:11.5px;font-weight:500;color:#c2c5cb;min-height:{{ctlH}}px">Best quality ↓</button>
-                <button onClick="{{lbCopyLink}}" style="flex:1;border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 10px;font-size:11.5px;font-weight:500;color:#c2c5cb;min-height:{{ctlH}}px">Copy link</button>
+                <button onClick="{{lbDlQuiet}}" data-tip="Download the highest-quality render" class="hv-soft hv-line" style="flex:1;border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 10px;font-size:11.5px;font-weight:500;color:#c2c5cb;min-height:{{ctlH}}px">Best quality ↓</button>
+                <button onClick="{{lbCopyLink}}" data-tip="Copy the title + Figma link" class="hv-soft hv-line" style="flex:1;border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 10px;font-size:11.5px;font-weight:500;color:#c2c5cb;min-height:{{ctlH}}px">Copy link</button>
               </div>
             </sc-if>
             <sc-if value="{{lbCanMng}}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{lbToggleMng}}" aria-expanded="{{lbMngAria}}" style="border:0;background:transparent;padding:8px 0 0;font-size:12px;font-weight:600;color:#80848d;text-align:left">{{lbMngLabel}}</button>
+              <button onClick="{{lbToggleMng}}" aria-expanded="{{lbMngAria}}" class="hv-soft" style="border:0;background:transparent;border-radius:4px;padding:8px 0 0;font-size:12px;font-weight:600;color:#80848d;text-align:left">{{lbMngLabel}}</button>
             </sc-if>
             <sc-if value="{{lbMngOpen}}" hint-placeholder-val="{{ false }}">
-              <button onClick="{{lbEditDetails}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:500;color:#e8e8ea;text-align:left;min-height:{{ctlH}}px">✎ Edit title, need &amp; usage note</button>
-              <button onClick="{{lbSendBack}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:500;color:#e8e8ea;text-align:left;min-height:{{ctlH}}px">↩ Send back to Review</button>
-              <button onClick="{{lbRemove}}" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:left;min-height:{{ctlH}}px">Remove from Ready…</button>
+              <button onClick="{{lbEditDetails}}" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:500;color:#e8e8ea;text-align:left;min-height:{{ctlH}}px">✎ Edit title, need &amp; usage note</button>
+              <button onClick="{{lbSendBack}}" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:500;color:#e8e8ea;text-align:left;min-height:{{ctlH}}px">↩ Send back to Review</button>
+              <button onClick="{{lbRemove}}" class="hv-red" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;text-align:left;min-height:{{ctlH}}px">Remove from Ready…</button>
             </sc-if>
           </div>
         </div>
@@ -489,7 +506,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.65);white-space:nowrap">variants {{lbDupeCounter}}</span>
           <div style="display:flex;gap:6px;overflow-x:auto">
             <sc-for list="{{lbDupes}}" as="d" hint-placeholder-count="3">
-              <button onClick="{{d.go}}" aria-label="{{d.aria}}" style="flex:none;width:64px;height:44px;border-radius:4px;overflow:hidden;cursor:pointer;background-color:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);background-image:{{d.bg}};background-size:cover;background-position:center;border:2px solid {{d.ring}};padding:0"></button>
+              <button onClick="{{d.go}}" aria-label="{{d.aria}}" class="hv-bright" style="flex:none;width:64px;height:44px;border-radius:4px;overflow:hidden;cursor:pointer;background-color:#e9ebee;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);background-image:{{d.bg}};background-size:cover;background-position:center;border:2px solid {{d.ring}};padding:0"></button>
             </sc-for>
           </div>
         </sc-if>
@@ -534,8 +551,8 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
           <sc-if value="{{pubBlockedMsg}}" hint-placeholder-val="{{ false }}">
             <span style="flex:1;font-size:11px;color:#ffd166">{{pubBlocked}}</span>
           </sc-if>
-          <button type="button" onClick="{{dlgCancel}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 14px;font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">Cancel</button>
-          <button type="submit" disabled="{{pubDisabled}}" style="border:0;background:{{pubBtnBg}};border-radius:4px;padding:9px 16px;font-size:12.5px;font-weight:700;color:#fff;cursor:{{pubCursor}};min-height:{{ctlH}}px">{{pubBtnLabel}}</button>
+          <button type="button" onClick="{{dlgCancel}}" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 14px;font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">Cancel</button>
+          <button type="submit" disabled="{{pubDisabled}}" class="hv-bright" style="border:0;background:{{pubBtnBg}};border-radius:4px;padding:9px 16px;font-size:12.5px;font-weight:700;color:#fff;cursor:{{pubCursor}};min-height:{{ctlH}}px">{{pubBtnLabel}}</button>
         </div>
       </form>
     </div>
@@ -551,12 +568,12 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <label style="display:block;font-size:11px;font-weight:700;color:#8b8f96;margin-bottom:4px">Required formats — fit checks and coverage use these</label>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
           <sc-for list="{{needFmtChips}}" as="fc" hint-placeholder-count="5">
-            <button type="button" onClick="{{fc.go}}" aria-pressed="{{fc.on}}" style="border:1px solid {{fc.line}};background:{{fc.bg}};color:{{fc.fg}};border-radius:4px;padding:6px 12px;font-size:11.5px;font-weight:600;font-family:'JetBrains Mono',monospace;min-height:{{chipH}}px">{{fc.label}}</button>
+            <button type="button" onClick="{{fc.go}}" aria-pressed="{{fc.on}}" class="{{fc.hvc}}" style="border:1px solid {{fc.line}};background:{{fc.bg}};color:{{fc.fg}};border-radius:4px;padding:6px 12px;font-size:11.5px;font-weight:600;font-family:'JetBrains Mono',monospace;min-height:{{chipH}}px">{{fc.label}}</button>
           </sc-for>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:4px">
           <input ref="{{needCustomRef}}" placeholder="custom, e.g. 1600×900" aria-label="Custom format" style="flex:1;background:#2a2d31;border:1px solid rgba(232,232,234,.17);border-radius:4px;padding:8px 12px;font-size:12.5px;outline:none;min-height:{{ctlH}}px">
-          <button type="button" onClick="{{needAddFmt}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:8px 14px;font-size:12px;font-weight:600;min-height:{{ctlH}}px">Add</button>
+          <button type="button" onClick="{{needAddFmt}}" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:8px 14px;font-size:12px;font-weight:600;min-height:{{ctlH}}px">Add</button>
         </div>
         <div style="font-size:11px;color:#80848d;margin-bottom:12px">No formats selected = any size counts. Off-format publishes carry an OFF-SPEC badge.</div>
         <label style="display:block;font-size:11px;font-weight:700;color:#8b8f96;margin-bottom:4px" for="sf-need-spec">Format note (shown with the need)</label>
@@ -566,11 +583,11 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <div style="font-size:11px;color:#80848d;margin-bottom:14px">{{needShareNote}}</div>
         <div style="display:flex;gap:8px;align-items:center">
           <sc-if value="{{needCanDelete}}" hint-placeholder-val="{{ false }}">
-            <button type="button" onClick="{{needDelete}}" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;min-height:{{ctlH}}px">Delete need…</button>
+            <button type="button" onClick="{{needDelete}}" class="hv-red" style="border:1px solid rgba(234,74,75,.4);background:transparent;border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#ea4a4b;min-height:{{ctlH}}px">Delete need…</button>
           </sc-if>
           <span style="flex:1"></span>
-          <button type="button" onClick="{{dlgCancel}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 14px;font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">Cancel</button>
-          <button type="submit" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:9px 16px;font-size:12.5px;font-weight:700;color:#fff;min-height:{{ctlH}}px">{{needSaveLabel}}</button>
+          <button type="button" onClick="{{dlgCancel}}" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 14px;font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">Cancel</button>
+          <button type="submit" class="hv-bright" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:9px 16px;font-size:12.5px;font-weight:700;color:#fff;min-height:{{ctlH}}px">{{needSaveLabel}}</button>
         </div>
       </form>
     </div>
@@ -583,8 +600,8 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <div style="font-size:12px;color:#8b8f96;margin-bottom:14px">Your name goes with your picks so teammates know who chose what.</div>
         <input ref="{{whoRef}}" defaultValue="{{whoVal}}" placeholder="e.g. Maya" aria-label="Your name" style="width:100%;background:#2a2d31;border:1px solid rgba(232,232,234,.17);border-radius:4px;padding:9px 12px;font-size:13px;min-height:{{ctlH}}px;margin-bottom:14px;outline:none">
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button type="button" onClick="{{dlgCancel}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 14px;font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">Cancel</button>
-          <button type="submit" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:9px 16px;font-size:12.5px;font-weight:700;color:#fff;min-height:{{ctlH}}px">Continue</button>
+          <button type="button" onClick="{{dlgCancel}}" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 14px;font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">Cancel</button>
+          <button type="submit" class="hv-bright" style="border:0;background:oklch(0.55 0.17 262);border-radius:4px;padding:9px 16px;font-size:12.5px;font-weight:700;color:#fff;min-height:{{ctlH}}px">Continue</button>
         </div>
       </form>
     </div>
@@ -596,8 +613,8 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <div style="font-size:15px;font-weight:700;margin-bottom:8px">{{confirmTitle}}</div>
         <div style="font-size:12.5px;color:#c2c5cb;margin-bottom:16px;line-height:1.55">{{confirmBody}}</div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button ref="{{confirmCancelRef}}" onClick="{{dlgCancel}}" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 14px;font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">Cancel</button>
-          <button onClick="{{confirmGo}}" style="border:0;background:#c2312f;border-radius:4px;padding:9px 16px;font-size:12.5px;font-weight:700;color:#fff;min-height:{{ctlH}}px">{{confirmLabel}}</button>
+          <button ref="{{confirmCancelRef}}" onClick="{{dlgCancel}}" class="hv-soft hv-line" style="border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:9px 14px;font-size:12.5px;font-weight:600;min-height:{{ctlH}}px">Cancel</button>
+          <button onClick="{{confirmGo}}" class="hv-bright" style="border:0;background:#c2312f;border-radius:4px;padding:9px 16px;font-size:12.5px;font-weight:700;color:#fff;min-height:{{ctlH}}px">{{confirmLabel}}</button>
         </div>
       </div>
     </div>
@@ -609,7 +626,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <div style="font-size:15px;font-weight:700">How it works</div>
           <span style="flex:1"></span>
-          <button ref="{{helpCloseRef}}" onClick="{{toggleHelp}}" aria-label="Close help" style="border:0;background:transparent;color:#8b8f96;font-size:16px;padding:6px 10px;min-width:44px;min-height:44px">✕</button>
+          <button ref="{{helpCloseRef}}" onClick="{{toggleHelp}}" aria-label="Close help" data-tip="Close (esc)" class="hv-soft" style="border:0;background:transparent;border-radius:4px;color:#8b8f96;font-size:16px;padding:6px 10px;min-width:44px;min-height:44px">✕</button>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:#c2c5cb;margin-bottom:14px">
           <div><b>Library</b> is the raw Figma estate plus uploads, opening on the judging queue: every asset awaits one verdict — <b>Pick</b> it into Review (Space) or <b>Reject</b> it out of the queue (X). Rejections are shared with the team and reversible under the Rejected filter. Or open a need on Ready and gather a shortlist for it.</div>
@@ -623,7 +640,7 @@ input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-vis
   </sc-if>
 
   <sc-if value="{{toastShow}}" hint-placeholder-val="{{ false }}">
-    <div role="status" aria-live="polite" style="position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#e4e7ec;color:#14161a;font-size:12.5px;font-weight:500;border-radius:4px;padding:{{toastPad}};z-index:90;pointer-events:{{toastPe}};display:flex;align-items:center;gap:10px;max-width:80vw"><span>{{toastMsg}}</span><sc-if value="{{toastHasAct}}" hint-placeholder-val="{{ false }}"><button onClick="{{toastGo}}" style="border:0;background:oklch(0.55 0.17 262);color:#fff;border-radius:4px;padding:5px 12px;font-size:11px;font-weight:600;flex:none;cursor:pointer">{{toastActLabel}}</button></sc-if></div>
+    <div role="status" aria-live="polite" style="position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#e4e7ec;color:#14161a;font-size:12.5px;font-weight:500;border-radius:4px;padding:{{toastPad}};z-index:90;pointer-events:{{toastPe}};display:flex;align-items:center;gap:10px;max-width:80vw"><span>{{toastMsg}}</span><sc-if value="{{toastHasAct}}" hint-placeholder-val="{{ false }}"><button onClick="{{toastGo}}" class="hv-bright" style="border:0;background:oklch(0.55 0.17 262);color:#fff;border-radius:4px;padding:5px 12px;font-size:11px;font-weight:600;flex:none;cursor:pointer">{{toastActLabel}}</button></sc-if></div>
   </sc-if>
   <input type="file" ref="{{fileRef}}" onChange="{{onFiles}}" multiple accept="image/*" aria-hidden="true" style="display:none">
 </div>
@@ -636,6 +653,7 @@ class Component extends DCLogic {
     gather:'', gDepth:0,
     picks:{}, rejects:{}, rejQ:{}, needs:[], uploads:[],
     shared:{}, queue:{adds:{}, rms:[]}, who:'', sync:'off', snapTs:0, staleN:0, staleUp:0, staleHide:false, ext:'unknown',
+    filterBatches:{}, pickBatches:{}, localFilterCount:0, localPickCount:0,
     shown:160, gw:1100, rootW:1200,
     lb:null, mng:false, dlg:null, menu:false, help:false, toast:'', toastAct:null };
 
@@ -693,8 +711,41 @@ class Component extends DCLogic {
     window.addEventListener('keydown', this._key);
     this._pop = () => this.applyHash();
     window.addEventListener('popstate', this._pop);
+    this.mountTip();
     await this.loadCatalog();
     this.applyHash();
+  }
+  /* Tooltips: one fixed bubble serving every [data-tip] control — native
+     title bubbles are slow, unstyled, and inconsistent across the app.
+     Delegated on document so re-renders never re-bind; fixed positioning so
+     scroll panes never clip it; also fires on keyboard focus. */
+  mountTip(){
+    const tip=document.createElement('div');
+    tip.setAttribute('aria-hidden','true');
+    tip.style.cssText='position:fixed;z-index:120;pointer-events:none;background:#26292e;color:#c9ccd2;border:1px solid rgba(232,232,234,.16);border-radius:4px;padding:5px 9px;font-size:11px;font-weight:500;line-height:1.5;max-width:280px;box-shadow:0 6px 20px rgba(0,0,0,.45);opacity:0;transform:translateY(2px);transition:opacity .12s ease,transform .12s ease';
+    document.body.appendChild(tip); this._tipEl=tip;
+    const hide=()=>{ clearTimeout(this._tipT); tip.style.opacity='0'; tip.style.transform='translateY(2px)'; };
+    const show=(el)=>{ const txt=el.getAttribute('data-tip'); if(!txt) return;
+      clearTimeout(this._tipT);
+      this._tipT=setTimeout(()=>{ if(!el.isConnected) return;
+        const r=el.getBoundingClientRect();
+        tip.textContent=txt; tip.style.left='0px'; tip.style.top='-9999px';
+        const tw=tip.offsetWidth, th=tip.offsetHeight;
+        const x=Math.max(8, Math.min(Math.round(r.left+r.width/2-tw/2), innerWidth-tw-8));
+        let y=Math.round(r.top-th-7); if(y<8) y=Math.round(r.bottom+7);
+        tip.style.left=x+'px'; tip.style.top=y+'px';
+        tip.style.opacity='1'; tip.style.transform='translateY(0)';
+      }, 350); };
+    this._tipOver=e=>{ const el=e.target&&e.target.closest&&e.target.closest('[data-tip]'); if(el) show(el); };
+    this._tipOut=e=>{ const el=e.target&&e.target.closest&&e.target.closest('[data-tip]');
+      if(el&&!(e.relatedTarget&&el.contains(e.relatedTarget))) hide(); };
+    this._tipHide=hide;
+    document.addEventListener('mouseover',this._tipOver);
+    document.addEventListener('mouseout',this._tipOut);
+    document.addEventListener('focusin',this._tipOver);
+    document.addEventListener('focusout',this._tipOut);
+    document.addEventListener('mousedown',hide,true);
+    window.addEventListener('scroll',hide,true);
   }
   componentDidUpdate(){ this.syncUrl(); }
   /* The three views are URL pages — #library, #review, #ready — so a
@@ -720,6 +771,14 @@ class Component extends DCLogic {
     if(this._ro) this._ro.disconnect(); if(this._rro) this._rro.disconnect();
     if(this._io) this._io.disconnect();
     clearInterval(this._poll);
+    if(this._tipEl){ clearTimeout(this._tipT);
+      document.removeEventListener('mouseover',this._tipOver);
+      document.removeEventListener('mouseout',this._tipOut);
+      document.removeEventListener('focusin',this._tipOver);
+      document.removeEventListener('focusout',this._tipOut);
+      document.removeEventListener('mousedown',this._tipHide,true);
+      window.removeEventListener('scroll',this._tipHide,true);
+      this._tipEl.remove(); }
   }
 
   sharedGet = async name => {
@@ -737,6 +796,19 @@ class Component extends DCLogic {
     this.setState({phase:'load'});
     this._sharedEtags={};
     let saved=null; try{ saved=JSON.parse(localStorage.getItem('sfap_v9')||localStorage.getItem('sfap_v8')||localStorage.getItem('sfap_v7')||'null'); }catch(e){}
+    const localFilter=window.SFAP_LOCAL_FILTER&&window.SFAP_LOCAL_FILTER.schemaVersion===1
+      ?window.SFAP_LOCAL_FILTER:null;
+    const filterBatches={...((saved&&saved.filterBatches)||{})};
+    const localFilterBatches=localFilter
+      ?(Array.isArray(localFilter.batches)?localFilter.batches:[{id:localFilter.id,additions:localFilter.additions||[]}])
+      :[];
+    const seedLocalFilterBatches=localFilterBatches
+      .filter(batch=>batch&&batch.id&&!filterBatches[batch.id]);
+    const pickBatches={...((saved&&saved.pickBatches)||{})};
+    const localPickBatches=localFilter&&Array.isArray(localFilter.pickBatches)
+      ?localFilter.pickBatches:[];
+    const seedLocalPickBatches=localPickBatches
+      .filter(batch=>batch&&batch.id&&!pickBatches[batch.id]);
     try {
       const r=await fetch('./config.json',{cache:'no-store'});
       if(r.ok){
@@ -777,7 +849,13 @@ class Component extends DCLogic {
         if(r.ok&&!r.unchanged) sharedRej=r.value; }catch(e){}
       this._rejCap=sharedRej!==null;
     } else {
-      this._libIndex={};   // upload bytes live on the Worker — unreachable now
+      this._libIndex={...((localFilter&&localFilter.baselineLibrary)||{})};
+      // While the shared state store is unavailable, the local Picker uses the
+      // last verified rejection baseline. This never writes it back remotely.
+      if(localFilter&&Array.isArray(localFilter.baselineRejectQids)){
+        sharedRej={};
+        for(const id of localFilter.baselineRejectQids)
+          sharedRej[id]={who:'verified v'+localFilter.baselineVersion,ts:''}; }
       let snap=null, bucket=null;
       try{ const r=await fetch(this.REMOTE+'snapshots/picks.json',{cache:'no-store'}); if(r.ok) snap=await r.json(); }catch(e){}
       try{ const r=await fetch(this.REMOTE+'bucket.json',{cache:'no-store'}); if(r.ok) bucket=await r.json(); }catch(e){}
@@ -841,6 +919,17 @@ class Component extends DCLogic {
       picks[id]={...(picks[id]||{}), ...sv, shared:!!(picks[id]&&picks[id].shared)};
       if(sv.by && !picks[id].by) picks[id].by=sv.by;
     }
+    // Local positive curation is a review overlay only. It never queues or
+    // posts a pick to the Worker, and it never marks an item Ready.
+    const seededLocalPickIds=[];
+    for(const batch of seedLocalPickBatches){ const appliedAt=new Date().toISOString(), t=Date.now();
+      for(const item of batch.additions||[]){ const id=typeof item==='string'?item:item.qid;
+        if(!this._byQid.get(id)||picks[id]) continue;
+        const dest=this.needExists(item.categoryId)?item.categoryId:'';
+        picks[id]={by:'codex local pick',dest,status:'cand',ab:'',at:0,
+          note:item.note||'',name:item.title||'',exc:false,t,shared:false,mod:false,
+          localPick:batch.id}; seededLocalPickIds.push(id); }
+      pickBatches[batch.id]={appliedAt,targetCount:(batch.additions||[]).length}; }
     // --- rejections: shared baseline + local not-yet-delivered overlay ---
     const rejQ={...((saved&&saved.rejQ)||{})};
     const rejects={};
@@ -851,8 +940,19 @@ class Component extends DCLogic {
     for(const id of Object.keys((saved&&saved.rejects)||{})){
       if(!this._byQid.get(id) || rejects[id] || rejQ[id]==='unreject') continue;
       rejects[id]={...saved.rejects[id], shared:false}; }
+    for(const id of seededLocalPickIds) if(rejects[id]) delete picks[id];
+    for(const batch of seedLocalFilterBatches){ const appliedAt=new Date().toISOString(), t=Date.now();
+      for(const item of batch.additions||[]){ const id=typeof item==='string'?item:item.qid;
+        if(!this._byQid.get(id)||rejects[id]||picks[id]) continue;
+        rejects[id]={by:'codex local filter',t,shared:false,localFilter:batch.id}; }
+      filterBatches[batch.id]={appliedAt,targetCount:(batch.additions||[]).length}; }
     for(const id of Object.keys(rejects)) if(picks[id]) delete rejects[id];   // a pick always wins
-    this.setState({phase:'ok', needs, uploads, picks, rejects, rejQ, shared, queue, who, sync, snapTs, staleN, staleUp, staleHide:false, ext:extDetected?'yes':(this.state.ext||'unknown')}, ()=>{ this.save(); this.flushRejQ(); });
+    const localFilterCount=localFilter?(localFilter.additions||[])
+      .filter(item=>rejects[typeof item==='string'?item:item.qid]).length:0;
+    const localPickCount=localFilter?(localFilter.pickAdditions||[])
+      .filter(item=>picks[typeof item==='string'?item:item.qid]).length:0;
+    this.setState({phase:'ok', needs, uploads, picks, rejects, rejQ, shared, queue, who, sync, snapTs, staleN, staleUp, staleHide:false,
+      ext:extDetected?'yes':(this.state.ext||'unknown'),filterBatches,pickBatches,localFilterCount,localPickCount}, ()=>{ this.save(); this.flushRejQ(); });
     clearInterval(this._poll);
     if(live) this._poll=setInterval(()=>this.refreshShared(), 30000);
   };
@@ -1041,7 +1141,8 @@ class Component extends DCLogic {
         if(Object.keys(o).length) needsX[n.id]=o; } }
     const rejects={}; for(const id of Object.keys(S.rejects)){ const e=S.rejects[id];
       if(!e.shared) rejects[id]=e; }        // synced rejections re-arrive from the bucket
-    try{ localStorage.setItem('sfap_v9', JSON.stringify({picks, needsX, uploads:S.uploads, queue:S.queue, who:S.who, rejects, rejQ:S.rejQ})); }
+    try{ localStorage.setItem('sfap_v9', JSON.stringify({picks, needsX, uploads:S.uploads, queue:S.queue, who:S.who, rejects, rejQ:S.rejQ,
+      filterBatches:S.filterBatches||{}, pickBatches:S.pickBatches||{}})); }
     catch(e){ if(!this._quotaWarned){ this._quotaWarned=true; this.toast('Device storage is full — changes kept for this session only'); } } }
 
   need(id){ return this.state.needs.find(n=>n.id===id)||null; }
@@ -1702,12 +1803,15 @@ class Component extends DCLogic {
     for(const [l,x] of named) if(Math.abs(v-x)/x<0.04) return flip?l.split(':').reverse().join(':'):l;
     return ar.toFixed(2)+':1'; }
   fmt(n){ return n.toLocaleString('en-US'); }
+  // compact count for tight chrome: 999, 1.2k, 9.9k, 10k, 123k
+  fmtK(n){ if(n<1000) return String(n);
+    const k=n/1000; return (k>=9.95?Math.round(k):Math.round(k*10)/10)+'k'; }
   stopEv=(e)=>e.stopPropagation();
   imgErr=(e)=>{ e.target.style.visibility='hidden'; };
 
   sel(val,onCh,opts,ariaLabel,maxW){ const nar=this.state.rootW<760;
     return React.createElement('select',
-    {value:val, onChange:onCh, 'aria-label':ariaLabel,
+    {value:val, onChange:onCh, 'aria-label':ariaLabel, className:'hv-line',
      style:{background:'#2a2d31',border:'1px solid rgba(232,232,234,.18)',borderRadius:4,
        padding:'6px 8px',fontSize:12,color:'#e8e8ea',maxWidth:maxW||170,outline:'none',minHeight:nar?44:30}},
     opts.map(o=>React.createElement('option',{key:o[0],value:o[0]},o[1]))); }
@@ -1732,6 +1836,7 @@ class Component extends DCLogic {
     const navTabs=[['lib','Library'],['rev','Review'],['ready','Ready']].map(([v,label])=>{
       const on=S.view===v;
       return { label, cur:on?'page':'false', bg:on?'#e4e7ec':'transparent', fg:on?'#111214':'#8b8f96',
+        hvc:on?'hv-bright':'hv-soft',
         hasBadge:v==='rev'&&candE.length>0, badge:String(candE.length),
         go:()=>this.setState({view:v, menu:false}) }; });
 
@@ -1744,6 +1849,12 @@ class Component extends DCLogic {
       syncTitle='The live bucket is unreachable. You see the last shared state'+(S.snapTs?(' ('+this.fmtDate(S.snapTs)+')'):'')+'; new picks queue here until you submit them as a GitHub issue that merges for everyone.'+(S.queue.sentAt?' An issue is already open for the current queue — queued items clear automatically once they appear in the shared bucket.':''); }
     else { syncLabel=narrow?'Local':'Local only';
       syncTitle='Neither the live bucket nor the shared snapshot loaded — picks stay in this browser until a connection returns.'; }
+    if(S.localFilterCount){
+      syncLabel=narrow?(this.fmt(S.localFilterCount)+' local'):(syncLabel+' · '+this.fmt(S.localFilterCount)+' local filtered');
+      syncTitle+=' '+this.fmt(S.localFilterCount)+' additional decisions are applied only to this local Picker.'; }
+    if(S.localPickCount){
+      syncLabel=narrow?(this.fmt(S.localPickCount)+' picked'):(syncLabel+' · '+this.fmt(S.localPickCount)+' local picked');
+      syncTitle+=' '+this.fmt(S.localPickCount)+' positive references are staged only in local Review.'; }
 
     // ---------- READY ----------
     const rq=S.readyQ.trim().toLowerCase();
@@ -1760,6 +1871,7 @@ class Component extends DCLogic {
         return {id:n.id,label:n.label,ct,dot:ct||cov.state==='part'?dot:'#2e3136',tip}; })]
       .map(x=>({
         label:x.label, ct:String(x.ct), dot:x.dot, tip:x.tip, cur:S.needSel===x.id?'true':'false',
+        hvc:S.needSel===x.id?'':'hv-soft',
         bg:S.needSel===x.id?'oklch(0.30 0.05 262)':'transparent',
         fg:x.ct||x.id===''?'#e8e8ea':'#80848d', wt:S.needSel===x.id?'700':'500',
         ctFg:x.ct?'#ffd166':'#5c6068',
@@ -1851,7 +1963,7 @@ class Component extends DCLogic {
     const srcs=ok?this.sources():[];
     const fs=ok?this.fs():null;
     const gatherNeed=ok&&S.gather?this.need(S.gather):null;
-    let libSectionsRaw=[], gMoreDef=null, libStat=null, libEmptyHint=null;
+    let libSectionsRaw=[], gMoreDef=null, libStat=null, libEmptyHint=null, pickCounts=null;
     if(ok && S.view==='lib'){
       if(gatherNeed){ const gd=this.gatherData(gatherNeed);
         libSectionsRaw=gd.sections; this._libTotal=gd.total; gMoreDef=gd.more; }
@@ -1859,6 +1971,8 @@ class Component extends DCLogic {
         const all=this.filtered();
         const pickedAll=all.filter(c=>S.picks[c.qid]);
         const rejAll=all.filter(c=>!S.picks[c.qid]&&S.rejects[c.qid]);
+        pickCounts={un:all.length-pickedAll.length-rejAll.length,
+          picked:pickedAll.length, rejected:rejAll.length, all:all.length};
         // Pick-state filter: Unpicked (default) is the judging queue — every
         // asset still awaiting a verdict; Picked shows every pick at once —
         // Review candidates and Ready assets together; Rejected holds the
@@ -1936,10 +2050,12 @@ class Component extends DCLogic {
           const isReady=pk&&pk.status==='ready'; const isCand=pk&&pk.status==='cand';
           const isRej=!pk&&!!S.rejects[c.qid];
           const dn=this.dispName(c,pk);
+          // one verdict language on every tile: ＋ Pick advances, ✕ rejects,
+          // ↩ undoes the verdict — back to the queue from Picked or Rejected
           let actLabel='＋ Pick', actBg='transparent', actFg='#e8e8ea', actLine='rgba(232,232,234,.24)', actAria='Pick '+dn+' for review';
-          if(isReady){ actLabel='Open'; actBg='transparent'; actFg='#b5ff90'; actLine='#b5ff90'; actAria='Open '+dn+' — already on Ready'; }
-          else if(isCand){ actLabel='✓'; actBg='transparent'; actFg='#8ab4ff'; actLine='oklch(0.45 0.09 262)'; actAria='Remove '+dn+' from Review'; }
-          else if(isRej){ actLabel='↩'; actBg='transparent'; actFg='#ff9b9c'; actLine='rgba(234,74,75,.4)'; actAria='Restore '+dn+' to the queue'; }
+          if(isReady){ actLabel='Open'; actFg='#b5ff90'; actLine='#b5ff90'; actAria='Open '+dn+' — already on Ready'; }
+          else if(isCand){ actLabel='↩'; actFg='#8b8f96'; actLine='rgba(232,232,234,.16)'; actAria='Remove '+dn+' from Review — back to the queue'; }
+          else if(isRej){ actAria='Pick '+dn+' for review — clears the rejection'; }
           let sub=c.page, subFg='#80848d';
           if(gatherNeed){ const ti=this._gTier?this._gTier[c.qid]:2;
             const reason=sec.reasons?this.gReason(c,gatherNeed,ti):'';
@@ -1955,15 +2071,17 @@ class Component extends DCLogic {
             hasRej:(!pk||isCand)&&!isRej,
             rej:(e)=>{ e.stopPropagation(); this.reject(c.qid); },
             rejAria:'Reject '+dn+(pk?' — removes it from Review':' — it leaves the queue'),
+            hasRestore:isRej,
+            restore:(e)=>{ e.stopPropagation(); this.unreject(c.qid); },
+            restoreAria:'Restore '+dn+' to the queue — no verdict yet',
             tag:isReady?('✓ '+this.needLabel(this.effDest(pk.dest))):(isCand?('→ '+(this.needLabel(this.effDest(pk.dest))||'no need yet')):''),
             actLabel, actBg, actFg, actLine, actAria,
             act:(e)=>{ e.stopPropagation();
               if(isReady) this.openLbAt(c.qid);
-              else if(isRej) this.unreject(c.qid);
               else this.pick(c.qid); },
             open:()=>this.openLbAt(c.qid),
             keyd:(e)=>{ if(e.key==='Enter'){ e.preventDefault(); this.openLbAt(c.qid); }
-              else if(e.key===' '){ e.preventDefault(); if(isRej) this.unreject(c.qid); else this.pick(c.qid); }
+              else if(e.key===' '){ e.preventDefault(); this.pick(c.qid); }
               else if(e.key==='x'||e.key==='X'){ e.preventDefault(); if((!pk||isCand)&&!isRej) this.reject(c.qid); } } });
         }
         rows.push({key:'r'+(ri++), tiles});
@@ -2001,14 +2119,28 @@ class Component extends DCLogic {
       .map(x=>{ const done=x.total>0&&x.judged>=x.total;
         return {...x, hasPicks:x.judged>0, done, dotFg:done?'#b5ff90':'#8ab4ff',
           pct:String(x.judged), ct:this.fmt(x.total), curAria:x.cur?'true':'false'}; });
-    const shapeChips=[['','Any'],['square','1:1'],['landscape','Wide'],['portrait','Tall'],['banner','Banner']]
-      .map(([id,label])=>({key:id||'any', label, on:S.shape===id?'true':'false',
+    const shapeChips=[['','Any','All shapes'],['square','1:1','Roughly square'],['landscape','Wide','Wider than tall'],['portrait','Tall','Taller than wide'],['banner','Banner','Very wide strips']]
+      .map(([id,label,tip])=>({key:id||'any', label, tip, on:S.shape===id?'true':'false',
         bg:S.shape===id?'#e4e7ec':'transparent', fg:S.shape===id?'#111214':'#8b8f96',
+        hvc:S.shape===id?'hv-bright':'hv-soft',
         go:()=>this.setState({shape:id, shown:160})}));
     const pickChips=[['un','Unpicked'],['picked','Picked'],['rejected','Rejected'],['','All']]
-      .map(([id,label])=>({key:id||'all', label, on:S.pickF===id?'true':'false',
-        bg:S.pickF===id?'#e4e7ec':'transparent', fg:S.pickF===id?'#111214':'#8b8f96',
-        go:()=>this.setState({pickF:id, shown:160})}));
+      .map(([id,label])=>{ const on=S.pickF===id;
+        // the chips draw the journey: the queue drains rightward (→) into a
+        // blue verdict that continues (Review → Ready) or a red one that ends
+        // it; the All chip sits apart past a divider — escape hatch, not flow
+        return {key:id||'all', label, on:on?'true':'false',
+          sep:!id, arrow:id==='picked', hvc:on?'hv-bright':'hv-soft',
+          hasDot:id==='picked'||id==='rejected',
+          dot:id==='picked'?'oklch(0.55 0.17 262)':'#ea4a4b',
+          tip:id==='un'?'The judging queue — every asset still awaiting a verdict'
+            :id==='picked'?'Picked — the journey continues: Review, then Ready'
+            :id==='rejected'?'Rejected — the journey ends here; restore or pick anytime'
+            :'Everything in scope, judged or not',
+          bg:on?'#e4e7ec':'transparent', fg:on?'#111214':(id?'#8b8f96':'#6b6f76'),
+          hasCt:!!pickCounts, ct:pickCounts?this.fmtK(pickCounts[id||'all']):'',
+          ctFg:on?'rgba(17,18,20,.55)':'#666a71',
+          go:()=>this.setState({pickF:id, shown:160})}; });
     const uploadsEmpty=!!(fs&&fs.custom&&!fs.cards.length&&!gatherNeed);
 
     // ---------- LIGHTBOX ----------
@@ -2143,6 +2275,7 @@ class Component extends DCLogic {
       for(const f of cur) if(!all.some(x=>x[0]===f[0]&&x[1]===f[1])) all.push(f);
       return all.map(f=>{ const on=cur.some(x=>x[0]===f[0]&&x[1]===f[1]);
         return {key:f[0]+'x'+f[1], label:this.fmtName(f), on:on?'true':'false',
+          hvc:on?'hv-bright':'hv-soft hv-line',
           bg:on?'#e4e7ec':'transparent', fg:on?'#111214':'#8b8f96', line:on?'#e4e7ec':'rgba(232,232,234,.17)',
           go:()=>{ const nx=on?cur.filter(x=>!(x[0]===f[0]&&x[1]===f[1])):[...cur,f];
             this.setState({dlg:{...dlg, formats:nx}}); }}; });
@@ -2150,13 +2283,16 @@ class Component extends DCLogic {
 
     // header freshness for help
     const freshTxt=this.meta?this.FILES.map((f,i)=>f.short+' '+this.fmtDate(this.meta[i].captured_at)).join(' · '):'';
-    const helpShareTxt=S.sync==='live'
+    const helpShareBase=S.sync==='live'
       ?(S.ext==='yes'
         ?'Picks, needs, titles, usage notes and ready-status are shared live through the team bucket (this browser refreshes every 30 seconds). Uploads go to the shared team library.'
         :'Picks and their needs are shared live through the team bucket (this browser refreshes every 30 seconds). Titles, usage notes and ready-status live in this browser only. Uploads go to the shared team library.')
       :(S.sync==='queue'
       ?'You see the team\u2019s last shared picks'+(S.snapTs?(' (as of '+this.fmtDate(S.snapTs)+')'):'')+'. The live bucket is unreachable, so new picks queue here — “Submit to team” opens a pre-filled GitHub issue that merges them into the shared bucket for everyone. Queued changes stay listed until they actually appear there. Titles, usage notes, ready-status and uploads stay in this browser only.'
       :'No shared connection right now — everything stays in this browser until the bucket or the shared snapshot is reachable again.');
+    const helpShareTxt=helpShareBase+(S.localPickCount
+      ?' '+this.fmt(S.localPickCount)+' positive references are a local Review overlay and are not sent to the Worker.'
+      :'');
 
     return {
       rootRef:this.rootRef, wide:!narrow, narrow,
