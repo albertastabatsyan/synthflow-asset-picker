@@ -483,6 +483,11 @@ button,select,a{transition:background-color .12s ease,border-color .12s ease,col
             </div>
           </sc-if>
           <div style="display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:12px;margin-bottom:10px">
+            <span style="color:#80848d">Asset ID</span>
+            <span style="display:flex;align-items:center;gap:6px;min-width:0">
+              <span title="{{lbAssetId}}" style="flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#c2c5cb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{lbAssetId}}</span>
+              <button onClick="{{lbCopyId}}" aria-label="Copy asset ID" data-tip="Copy asset ID" class="hv-soft hv-line" style="flex:none;border:1px solid rgba(232,232,234,.15);background:transparent;border-radius:4px;padding:4px 7px;font-size:10.5px;font-weight:600;color:#c2c5cb;min-height:28px">Copy</button>
+            </span>
             <span style="color:#80848d">Size</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">{{lbDims}}</span>
             <span style="color:#80848d">Source</span><span>{{lbSrc}}</span>
             <span style="color:#80848d">Variants</span><span>{{lbVariants}}</span>
@@ -1276,7 +1281,7 @@ class Component extends DCLogic {
     return fs.cards.filter(c=>{
       if(page && c.page!==page) return false;
       if(shape && this.shapeOf(c.ar)!==shape) return false;
-      if(ql && !(c.name.toLowerCase().includes(ql)||c.page.toLowerCase().includes(ql))) return false;
+      if(ql && !((c.name+' '+c.page+' '+c.qid).toLowerCase().includes(ql))) return false;
       return true; });
   }
 
@@ -1301,7 +1306,7 @@ class Component extends DCLogic {
     const S=this.state, q=S.q.trim().toLowerCase();
     const assigned=[...(this.fsets||[]).flatMap(fs=>fs.cards)]
       .filter(c=>c.assessment&&c.assessment.primaryNeed===need.id);
-    const all=assigned.filter(c=>!q||((c.name+' '+c.page+' '+(c.section||'')).toLowerCase().includes(q)));
+    const all=assigned.filter(c=>!q||((c.name+' '+c.page+' '+(c.section||'')+' '+c.qid).toLowerCase().includes(q)));
     const band=(value,kind)=>kind==='confidence'?(value>=80?'high':value>=60?'medium':'low')
       :(value>=75?'strong':value>=55?'usable':'weak');
     const selected={confidence:S.aConfidence,quality:S.aQuality,readiness:S.aReadiness,review:S.aReview};
@@ -1798,10 +1803,15 @@ class Component extends DCLogic {
   linksFor(entries){ const lines=[];
     for(const [qid,p] of entries){ const c=this.card(qid); if(c && !c.custom) lines.push(this.dispName(c,p)+' — '+c.fig); }
     return lines; }
+  copyText(txt,done){
+    if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(txt).then(done,()=>this.fbCopy(txt,done));
+    this.fbCopy(txt,done); }
   doCopy(lines){ if(!lines.length){ this.toast('No Figma-backed assets to copy'); return; }
     const txt=lines.join('\n'); const done=()=>this.toast(lines.length>1?(lines.length+' Figma links copied'):'Figma link copied');
-    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done,()=>this.fbCopy(txt,done));
-    else this.fbCopy(txt,done); }
+    return this.copyText(txt,done); }
+  copyAssetId(qid){ const id=String(qid||'');
+    if(!id){ this.toast('No asset ID available'); return; }
+    return this.copyText(id,()=>this.toast('Asset ID copied')); }
   fbCopy(txt,done){ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta);
     ta.select(); try{ document.execCommand('copy'); done(); }catch(e){ this.toast('Copy failed'); } ta.remove(); }
   /* Best-quality download: shared uploads come back as their original bytes;
@@ -2055,7 +2065,7 @@ class Component extends DCLogic {
       const items=readyE.filter(([,p])=>p.dest===n.id)
         .map(([qid,p])=>{ const c=this.card(qid); if(!c) return null;
           const dn=this.dispName(c,p);
-          if(rq && !((dn+' '+c.name+' '+c.page+' '+n.label).toLowerCase().includes(rq))) return null;
+          if(rq && !((dn+' '+c.name+' '+c.page+' '+n.label+' '+c.qid).toLowerCase().includes(rq))) return null;
           return {qid,p,c,dn}; }).filter(Boolean)
         .sort((a,b)=>b.p.at-a.p.at);
       const candN=candE.filter(([,p])=>this.effDest(p.dest)===n.id).length;
@@ -2379,6 +2389,7 @@ class Component extends DCLogic {
         const fresh=meta?('captured '+this.fmtDate(meta.captured_at)+(meta.lastModified?(' · Figma modified '+this.fmtDate(meta.lastModified)):''))
           :(c.lib?('team upload'+(c.ts?(' · added '+this.fmtDate(c.ts)):'')):'upload — lives in this browser');
         lbv={ lbCounter:(lb.idx+1)+' / '+lb.ids.length, lbName:dn, lbAria:'Asset detail: '+dn,
+          lbAssetId:qid, lbCopyId:(e)=>{e.stopPropagation(); this.copyAssetId(qid);},
           lbDir:narrow?'column':'row', lbPanelW:narrow?'100%':'300px', lbPanelAlign:narrow?'stretch':'center',
           lbStatus: isReady?((offspec?'✓ READY · OFF-SPEC · ':'✓ READY · ')+destLbl):(isCand?(destLbl?('CANDIDATE → '+destLbl):'CANDIDATE — NO NEED YET'):(isRejLb?'✕ REJECTED — OUT OF THE QUEUE':'IN QUEUE — AWAITING A VERDICT')),
           lbStatusLine: isReady?(offspec?'#ffd166':'#b5ff90'):(isCand?'oklch(0.45 0.09 262)':(isRejLb?'rgba(234,74,75,.5)':'rgba(232,232,234,.25)')),
@@ -2535,7 +2546,7 @@ class Component extends DCLogic {
       needSelectEl:this.sel(S.needSel,(e)=>this.setState({needSel:e.target.value}),
         [['','All needs'],...S.needs.map(n=>[n.id,n.label])],'Filter by need',180),
       readyQ:S.readyQ, onReadyQ:(e)=>this.setState({readyQ:e.target.value}),
-      readyPh:narrow?'Search ready…':'Search ready assets…  ( / )',
+      readyPh:narrow?'Search ready…':'Search name or ID…  ( / )',
       newNeed:()=>this.openDlg({kind:'need', formats:[]}),
       needHead:!!selNeed, needHeadHasNote:!!(selNeed&&selNeed.note), needHeadNote:selNeed?selNeed.note:'',
       needHeadCanGather:selReadyN>0,
@@ -2572,8 +2583,8 @@ class Component extends DCLogic {
         [['','All pages'],...fs.pageOrder.map(p=>[p,p])],'Page',150):null,
       libBarShow:!uploadsEmpty||narrow,
       libQ:S.q, onLibQ:(e)=>this.setState({q:e.target.value, shown:160}),
-      libPh:narrow?'Search…':'Search name or page…  ( / )',
-      gatherPh:narrow?'Search…':'Search within results…  ( / )',
+      libPh:narrow?'Search…':'Search name, page or ID…  ( / )',
+      gatherPh:narrow?'Search…':'Search name or ID…  ( / )',
       libFilters:!uploadsEmpty,
       shapeSelectEl, pickChips, isUploads:!!(fs&&fs.custom)&&!uploadsEmpty,
       uploadClick:()=>{ if(this.fileEl) this.fileEl.click(); },
